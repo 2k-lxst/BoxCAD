@@ -36,17 +36,13 @@ python -m venv venv
 <details>
 	<summary>Windows</summary>
 
-	```bash
 	venv\Scripts\activate
-	```
 </details>
 
 <details>
 	<summary>MacOS, Linux, WSL</summary>
 
-	```bash
 	source venv/bin/activate 
-	```
 </details>
 
 ## 2. Installation
