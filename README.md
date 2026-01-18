@@ -19,11 +19,11 @@ BoxCAD is a lightweight, Python-powered desktop application that allows you to d
 
 - Python 3.14.2
 
-PySide6: For the modern, native-feeling GUI.
+- PySide6: For the modern, native-feeling GUI.
 
-CadQuery: The powerful industrial-grade geometric kernel.
+- CadQuery: The powerful industrial-grade geometric kernel.
 
-PyQtGraph: For high-performance 3D visualization.
+- PyQtGraph: For high-performance 3D visualization.
 
 # 🚀 Getting Started
 ## 1. Prerequisites
