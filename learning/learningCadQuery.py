@@ -3,7 +3,7 @@ import cadquery as cq
 # 1. Definition of parameters
 
 # Basic parameters
-length = 100
+length = 90
 width = 60
 height = 40
 thickness = 2
