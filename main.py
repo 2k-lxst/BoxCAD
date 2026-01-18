@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         # Compile the icon path
         # This approach works regardless of where you run the script
         script_dir = os.path.dirname(__file__)
-        icon_path = os.path.join(script_dir, "assets", "Icon.ico")
+        icon_path = os.path.join(script_dir, "assets", "icon.ico")
 
         # Set the window's title and icon
         self.setWindowTitle(app_name + " v0.0.1")
