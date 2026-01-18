@@ -1,58 +1,107 @@
-![BoxCAD Banner](BoxCAD/assets/banner.png)
+![BoxCAD Banner](assets/thin_banner.png)
 
-# BoxCAD 📦
-## The Parametric Enclosure Designer for Makers.
+# BoxCAD 📦  
+## A Parametric Enclosure Designer for Makers
 
-BoxCAD is a lightweight, Python-powered desktop application that allows you to design custom 3D-printable enclosures simply by entering dimensions. No more manual 3D modeling for simple project boxes - just input your parameters, select your hardware preset, and export.
+**BoxCAD** is a lightweight, Python-powered desktop application for designing custom, 3D-printable project enclosures. Instead of manually modeling simple boxes in CAD software, you define dimensions and hardware presets, preview the result in real time, and export directly for manufacturing.
 
-# ✨ Key Features
+The goal is speed, repeatability, and clean parametric control — especially for electronics projects.
 
-- True Parametric Design: Adjust Length, Width, Height, and Thickness; all other components (lids, screw holes, offsets) update automatically.
+---
 
-- Hardware Presets: Integrated footprints for popular boards like Arduino Uno, ESP32, and Raspberry Pi.
+## ✨ Key Features
 
-- Real-time 3D Preview: Visualize your enclosure instantly using an OpenGL-accelerated viewport.
+- **True Parametric Design**  
+  Adjust length, width, height, and wall thickness. All dependent features — lids, screw holes, offsets — update automatically.
 
-- Manufacturing Ready: Export directly to .STL for 3D printing.
+- **Hardware Presets**  
+  Built-in footprints for popular boards such as Arduino Uno, ESP32, and Raspberry Pi simplify mounting and alignment.
 
-# 🛠️ Built With
+- **Real-time 3D Preview**  
+  An OpenGL-accelerated viewport lets you instantly visualize changes as you tweak parameters.
 
-- Python 3.14.2
+- **Manufacturing Ready**  
+  Export clean `.STL` files suitable for direct 3D printing.
 
-PySide6: For the modern, native-feeling GUI.
+---
 
-CadQuery: The powerful industrial-grade geometric kernel.
+## 🛠️ Built With
 
-PyQtGraph: For high-performance 3D visualization.
+BoxCAD is built entirely in Python using modern, well-supported libraries:
 
-# 🚀 Getting Started
-## 1. Prerequisites
-Ensure you have Python 3.14.2 installed, then set up a virtual environment:
+- **Python 3.14.2**
+- **PySide6** – Native-looking cross-platform GUI
+- **CadQuery** – Industrial-grade parametric geometry kernel
+- **PyQtGraph** – High-performance 3D visualization
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+
+- **Python 3.14.2**  
+  Make sure Python is installed and available in your system PATH.
+
+- **Virtual Environment**  
+  It is strongly recommended to use a virtual environment to avoid dependency conflicts.
+
+Create one in the directory where you cloned the repository:
 
 ```bash
-python -m venv venv
+python -m venv .venv
 ```
 
-<details>
-	<summary>Windows</summary>
+Once the virtual environment is created, activate it using the instructions below for your operating system.
 
-	venv\Scripts\activate
+<details>
+<summary><strong>Windows</strong></summary>
+
+Activate the virtual environment:
+
+```bash
+.venv\Scripts\activate
+```
+
 </details>
 
 <details>
-	<summary>MacOS, Linux, WSL</summary>
+<summary><strong>macOS, Linux, and WSL</strong></summary>
 
-	source venv/bin/activate 
+Activate the virtual environment:
+
+```bash
+source .venv/bin/activate
+```
+
 </details>
 
-## 2. Installation
+---
+
+### 2. Installation
+
+Install all required dependencies using `pip`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 3. Usage
+This will install all libraries needed to run BoxCAD.
+
+---
+
+### 3. Usage
+
+Start the application by running:
 
 ```bash
 python main.py
 ```
+
+The main window will open, allowing you to configure enclosure parameters, select hardware presets, preview the model, and export your design.
+
+---
+
+## 📄 License
+
+This project uses the *MIT License*. You can learn more about it [here](https://github.com/2k-lxst/BoxCAD/blob/main/LICENSE).
