@@ -48,9 +48,9 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 
 Create one in the directory where you cloned the repository:
 
-'''bash
+```bash
 python -m venv .venv
-'''
+```
 
 Once the virtual environment is created, activate it using the instructions below for your operating system.
 
@@ -59,9 +59,9 @@ Once the virtual environment is created, activate it using the instructions belo
 
 Activate the virtual environment:
 
-'''bash
+```bash
 .venv\Scripts\activate
-'''
+```
 
 </details>
 
@@ -70,9 +70,9 @@ Activate the virtual environment:
 
 Activate the virtual environment:
 
-'''bash
+```bash
 source .venv/bin/activate
-'''
+```
 
 </details>
 
@@ -82,9 +82,9 @@ source .venv/bin/activate
 
 Install all required dependencies using `pip`:
 
-'''bash
+```bash
 pip install -r requirements.txt
-'''
+```
 
 This will install all libraries needed to run BoxCAD.
 
@@ -94,9 +94,9 @@ This will install all libraries needed to run BoxCAD.
 
 Start the application by running:
 
-'''bash
+```bash
 python main.py
-'''
+```
 
 The main window will open, allowing you to configure enclosure parameters, select hardware presets, preview the model, and export your design.
 
