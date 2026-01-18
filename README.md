@@ -1,4 +1,4 @@
-![BoxCAD Banner](BoxCAD/assets/banner.png)
+![BoxCAD Banner](assets/thin_banner.png)
 
 # BoxCAD 📦
 ## The Parametric Enclosure Designer for Makers.
