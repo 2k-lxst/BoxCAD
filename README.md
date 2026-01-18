@@ -104,4 +104,4 @@ The main window will open, allowing you to configure enclosure parameters, selec
 
 ## 📄 License
 
-_Add license information here if applicable._
+This project uses the *MIT License*. You can learn more about it [here](https://github.com/2k-lxst/BoxCAD/blob/main/LICENSE).
