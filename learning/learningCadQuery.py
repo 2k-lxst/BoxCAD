@@ -63,8 +63,16 @@ cover = (
     .extrude(lip_height)
 )
 
-# 5. Export to STL
-cq.exporters.export(enclosure, "learning/enclosure_learning_preview.stl")
-cq.exporters.export(cover, "learning/cover_learning_preview.stl")
+# 5. Create Assmebly and configure before exporting
+assembly = cq.Assembly()
 
-print("Sample enclosure with a cover generated succcessfully!")
+# Add the parts to the assembly
+assembly.add(enclosure, name="Enclosure", color=cq.Color("blue"))
+assembly.add(cover, name="Cover", color=cq.Color("red"), loc=cq.Location(cq.Vector(0, 0, height)))
+
+# 6. Export as a single STEP file (to preserve colors)
+# Note: use cq.exporters.export when exporting a single object
+assembly.save("learning/enclosure_with_cover.step")
+
+# 7. Print the finished message in terminal
+print("Sample assembly (enclosure with a cover) generated succcessfully!")
