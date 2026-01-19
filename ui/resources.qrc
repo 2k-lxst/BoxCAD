@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/images">
+    <file>centerpiece.png</file>
+    <file>background.png</file>
+    <file>thin_banner.png</file>
+  </qresource>
+</RCC>
