@@ -1,4 +1,6 @@
 import os
+import sys
+import platform
 from qtpy.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -8,28 +10,28 @@ from qtpy.QtWidgets import (
     QLabel
 )
 from qtpy.QtGui import QIcon, QFont
-from qtpy.QtCore import Qt, QSize
+from qtpy.QtCore import Qt, QSize, QStandardPaths
 from qtpy.uic import loadUi
 import json
 from datetime import datetime, timezone
-import ui.resources_rc
 
 # Global app settings
 app_name = "BoxCAD"
-version_number = "0.0.1"
-
-# App theme
-PRIMARY_COLOR = "#5A8DEE"
-PRIMARY_HOVER = "#6EA0FF"
-BACKGROUND_COLOR = "#1E1E1E"
-SURFACE_COLOR = "#252526"
-TEXT_PRIMARY = "#FFFFFF"
-TEXT_SECONDARY = "rgba(255, 255, 255, 0.55)"
+app_version_number = "0.0.1"
+app_style = "Fusion"
 
 print("The program is running.")
-print(f"Welcome to {app_name} v{version_number}")
+print(f"Welcome to {app_name} v{app_version_number}!\n")
+print(
+    "Information:\n"
+    "============\n"
+    f"{app_name} v{app_version_number}\n"
+    f"Python: {sys.version.split()[0]} ({platform.python_implementation()})\n"
+    f"Executable: {sys.executable}\n"
+    f"OS: {platform.system()} {platform.release()} ({platform.machine()})\n"
+)
 
-# TODO: Update the recent files list by calling self.update_recent_files when saving a newly-created file
+# TODO: Update the recent files list by calling self.update_recent_files when user saves a newly-created file
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -39,20 +41,25 @@ class MainWindow(QMainWindow):
 
         # Compile all paths
         # This approach works regardless of where you run the script
+
+        self.recent_file_path = recent_file_path = os.path.join(data_dir, "recentFiles.json")
+
         script_dir = os.path.dirname(__file__)
         icon_path = os.path.join(script_dir, "assets", "icon.ico")
-        ui_path = os.path.join(script_dir, "ui", "StartupUI.ui")
+        welcome_screen_ui_path = os.path.join(script_dir, "ui", "welcome_screen.ui")
+        main_window_ui_path = os.path.join(script_dir, "ui", "main_window.ui")
 
-        self.ui = loadUi(ui_path, self)
+        self.ui = loadUi(welcome_screen_ui_path, self)
 
-        self.ui.btn_create_project.clicked.connect(self.create_new_project)
-        self.ui.btn_hardware_library.clicked.connect(self.hardware_library)
-        self.ui.btn_tutorials.clicked.connect(self.open_tutorials)
+        self.ui.btnCreateProject.clicked.connect(self.create_new_project)
+        self.ui.btnHardwareLibrary.clicked.connect(self.hardware_library)
+        self.ui.btnTutorials.clicked.connect(self.open_tutorials)
+        self.ui.btnExit.clicked.connect(QApplication.quit)
 
-        # self.ui.recent_projects_list.setFocusPolicy(Qt.NoFocus) # type: ignore
+        self.ui.recentProjectsList.itemClicked.connect(self.load_recent)
 
         # Set the window's title and icon
-        self.setWindowTitle(app_name + " v0.0.1")
+        self.setWindowTitle(f"{app_name} + v{app_version_number}")
         self.setWindowIcon(QIcon(icon_path))
 
         self.populate_recent_projects_list()
@@ -62,7 +69,7 @@ class MainWindow(QMainWindow):
         if os.name == "nt":
             import ctypes
 
-            myappid = f"2klxst.{app_name}.{app_name}.{version_number}"
+            myappid = f"2klxst.{app_name}.{app_name}.{app_version_number}"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     # TODO: Finish the create new project functionality
@@ -97,14 +104,17 @@ class MainWindow(QMainWindow):
         # self.ui.stackedWidget.setCurrentIndex(1)
 
     def load_recent_files(self):
-        # Load the recentFiles.json file safely
-        if not os.path.exists("recentFiles.json"):
-            print("The recentFiles.json doesn't exist in the same directory as the script!")
+        # Load the recentFiles.json file safely. If it doesn't exist, create it.
+        if not os.path.exists(self.recent_file_path):
+            with open(self.recent_file_path, "w") as file:
+                json.dump([], file)
+
+            print("The recentFiles.json doesn't exist. It was created automatically.")
 
             return []
 
         try:
-            with open("recentFiles.json", "r") as file:
+            with open(self.recent_file_path, "r") as file:
                 return json.load(file)
         except json.JSONDecodeError:
             print("The recentFiles.json file is corrupted!")
@@ -124,7 +134,7 @@ class MainWindow(QMainWindow):
         return data[:5]
 
     def save_recent_files(self, data):
-        with open("recentFiles.json", "w") as file:
+        with open(self.recent_file_path, "w") as file:
             json.dump(data, file, indent=4) # Dump the new data into recentFiles.json
 
     def update_recent_files(self, file_path):
@@ -153,10 +163,21 @@ class MainWindow(QMainWindow):
         self.save_recent_files(data)
 
     def populate_recent_projects_list(self):
-        self.ui.recent_projects_list.clear()
+        self.ui.recentProjectsList.clear()
 
         data = self.load_recent_files()
         data = self.sort_by_latest(data)
+
+        if not data:
+            item = QListWidgetItem("No recent projects")
+            item.setFlags(Qt.NoItemFlags) # type: ignore
+            item.setTextAlignment(Qt.AlignCenter) # type: ignore
+            item.setForeground(Qt.gray) # type: ignore
+            item.setSizeHint(QSize(0, 40))
+
+            self.ui.recentProjectsList.addItem(item)
+
+            return
 
         for item in data:
             list_item = QListWidgetItem()
@@ -168,7 +189,7 @@ class MainWindow(QMainWindow):
             layout.setSpacing(2)
 
             # File name (big and bold)
-            name_label = QLabel(str.capitalize(item["fileNameNoExt"]))
+            name_label = QLabel(item["fileNameNoExt"])
 
             name_font = QFont()
             name_font.setPointSize(10)
@@ -192,32 +213,22 @@ class MainWindow(QMainWindow):
             # Store file path in the item (IMPORTANT!)
             list_item.setData(Qt.UserRole, item["filePath"]) # type: ignore
 
-            self.ui.recent_projects_list.addItem(list_item)
-            self.ui.recent_projects_list.setItemWidget(list_item, widget)
+            self.ui.recentProjectsList.addItem(list_item)
+            self.ui.recentProjectsList.setItemWidget(list_item, widget)
 
-app = QApplication()
+app = QApplication(sys.argv)
 
-# Apply the global theme to the app
-app.setStyleSheet(f"""
-QPushButton {{
-    background-color: {PRIMARY_COLOR};
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-}}
+QApplication.setOrganizationName("BoxCAD")
+QApplication.setApplicationName("BoxCAD")
 
-QPushButton:hover {{
-    background-color: {PRIMARY_HOVER};
-}}
+data_dir = QStandardPaths.writableLocation(
+    QStandardPaths.AppDataLocation # type: ignore
+)
 
-QPushButton:pressed {{
-    background-color: {PRIMARY_COLOR};
-}}
+os.makedirs(data_dir, exist_ok=True)
 
-QWidget:focus {{
-    border: 1px solid {PRIMARY_COLOR};
-}}
-""")
+# Set the app's style
+app.setStyle(app_style)
 
 winddow = MainWindow()
 winddow.show()
