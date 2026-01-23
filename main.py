@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
         self.ui.recentProjectsList.itemClicked.connect(self.load_recent)
 
         # Set the window's title and icon
-        self.setWindowTitle(f"{app_name} + v{app_version_number}")
+        self.setWindowTitle(f"{app_name} v{app_version_number}")
         self.setWindowIcon(QIcon(icon_path))
 
         self.populate_recent_projects_list()
