@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
     # TODO: Finish the load recent functionality
     def load_recent(self, item):
         print("A recent project from the list was clicked!")
-        print(f"Loading: {item.text()}")
+        print(f"Loading: {item.data(Qt.UserRole + 1)}") # Get the item's display name             # type: ignore
         print("Switching to Workspace...")
 
         # self.ui.stackedWidget.setCurrentIndex(1)
@@ -210,8 +210,9 @@ class MainWindow(QMainWindow):
 
             widget.setLayout(layout)
 
-            # Store file path in the item (IMPORTANT!)
+            # Store file path and it's display name the item (IMPORTANT!)
             list_item.setData(Qt.UserRole, item["filePath"]) # type: ignore
+            list_item.setData(Qt.UserRole + 1, name_label.text()) # Store the item's display name in custom data            # type: ignore
 
             self.ui.recentProjectsList.addItem(list_item)
             self.ui.recentProjectsList.setItemWidget(list_item, widget)
