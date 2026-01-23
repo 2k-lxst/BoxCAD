@@ -102,6 +102,10 @@ The main window will open, allowing you to configure enclosure parameters, selec
 
 ---
 
+## 🏞️ Short demo GIF
+Below is a short GIF showing the functionality so far.
+![BoxCAD demo](assets/demo/demo.gif)
+
 ## 📄 License
 
 This project uses the *MIT License*. You can learn more about it [here](https://github.com/2k-lxst/BoxCAD/blob/main/LICENSE).
