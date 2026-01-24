@@ -31,6 +31,12 @@ print(
     f"OS: {platform.system()} {platform.release()} ({platform.machine()})\n"
 )
 
+def resource_path(relative_path):
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path) # type: ignore
+
+    return os.path.join(os.path.abspath("."), relative_path)
+
 # TODO: Update the recent files list by calling self.update_recent_files when user saves a newly-created file
 
 class MainWindow(QMainWindow):
@@ -41,13 +47,21 @@ class MainWindow(QMainWindow):
 
         # Compile all paths
         # This approach works regardless of where you run the script
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
         self.recent_file_path = recent_file_path = os.path.join(data_dir, "recentFiles.json")
 
         script_dir = os.path.dirname(__file__)
         icon_path = os.path.join(script_dir, "assets", "icon.ico")
+<<<<<<< HEAD
         welcome_screen_ui_path = os.path.join(script_dir, "ui", "welcome_screen.ui")
         main_window_ui_path = os.path.join(script_dir, "ui", "main_window.ui")
+=======
+        welcome_screen_ui_path = resource_path("ui/welcome_screen.ui")
+        main_window_ui_path = resource_path("ui/main_window.ui")
+>>>>>>> master
 
         self.ui = loadUi(welcome_screen_ui_path, self)
 
