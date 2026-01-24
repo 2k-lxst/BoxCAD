@@ -98,7 +98,7 @@ Start the application by running:
 python main.py
 ```
 
-The main window will open, allowing you to configure enclosure parameters, select hardware presets, preview the model, and export your design.
+The welcome window will open, in which you can create a project, browse the hardware library and watch tutorials.
 
 ---
 
