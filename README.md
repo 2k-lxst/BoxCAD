@@ -43,6 +43,53 @@ You can install and run BoxCAD by simply extracting the .zip file, going into th
 
 The welcome window will open, in which you can create a project, browse the hardware library and watch tutorials.
 
+<details>
+
+<summary><strong>Installation & usage (for developers)</strong></summary>
+
+**Note: this section is ONLY for developers. Regular users and HackClub judges should follow instructions above!**
+
+### 1. Prerequisites
+
+- **Python 3.14.2**
+- Make sure Python is installed and available in your system PATH.
+- **Virtual Environment** It is strongly recommended to use a virtual environment to avoid dependency conflicts. Create one in the directory where you cloned the repository:
+
+`python -m venv .venv`
+
+Once the virtual environment is created, activate it using the instructions below for your operating system.
+
+<details>
+  <summary><strong>Windows</strong></summary>
+  
+  Activate the virtual environment:
+  `.venv\Scripts\activate`
+</details>
+
+<details>
+  <summary><strong>macOS, Linux, and WSL</strong></summary>
+  
+  Activate the virtual environment:
+  `source .venv/bin/activate`
+</details>
+
+---
+
+### 2. Installation Install all required dependencies using pip:
+
+`pip install -r requirements.txt`
+
+This will install all libraries needed to run BoxCAD.
+
+---
+
+### 3. Usage Start the application by running:
+`python main.py`
+
+The welcome window will open, in which you can create a project, browse the hardware library and watch tutorials.
+
+</details>
+
 ---
 
 ## 🏞️ Short demo GIF
