@@ -47,7 +47,7 @@ The welcome window will open, in which you can create a project, browse the hard
 
 <summary><strong>Installation & usage (for developers)</strong></summary>
 
-<brY
+<br>
 
 > ⚠️ **Developer-only section**  
 > Regular users and HackClub judges should follow the instructions above.
