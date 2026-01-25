@@ -1,0 +1,25 @@
+JSON properties
+
+Arduino Nano:
+
+Units: mm
+Name: Arduino Nano V3
+PCBLength: 43.16
+PCBWidth: 17.76
+TotalHeight: 19.51
+HolePattern: 4-tl-tr-bl-br
+HoleDiameter: 1.65
+HoleOffsetX: 1.26
+HoleOffsetY: 1.26
+
+Ports:
+
+Label: MiniB-USB
+Edge: back
+PositionOffset: 7.62
+Width: 7.70
+Length: 9.20
+Protrusion: 1.45
+
+Clearance:
+TopClearance:
