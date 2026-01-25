@@ -38,7 +38,7 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 
 ## 🚀 Getting Started
 
-## Installation & usage
+## Installation & usage (for users of the app)
 You can install and run BoxCAD by simply extracting the .zip file, going into the extracted folder and running the .exe file.
 
 The welcome window will open, in which you can create a project, browse the hardware library and watch tutorials.
