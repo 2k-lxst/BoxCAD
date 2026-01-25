@@ -38,65 +38,8 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 
 ## 🚀 Getting Started
 
-### 1. Prerequisites
-
-- **Python 3.14.2**  
-  Make sure Python is installed and available in your system PATH.
-
-- **Virtual Environment**  
-  It is strongly recommended to use a virtual environment to avoid dependency conflicts.
-
-Create one in the directory where you cloned the repository:
-
-```bash
-python -m venv .venv
-```
-
-Once the virtual environment is created, activate it using the instructions below for your operating system.
-
-<details>
-<summary><strong>Windows</strong></summary>
-
-Activate the virtual environment:
-
-```bash
-.venv\Scripts\activate
-```
-
-</details>
-
-<details>
-<summary><strong>macOS, Linux, and WSL</strong></summary>
-
-Activate the virtual environment:
-
-```bash
-source .venv/bin/activate
-```
-
-</details>
-
----
-
-### 2. Installation
-
-Install all required dependencies using `pip`:
-
-```bash
-pip install -r requirements.txt
-```
-
-This will install all libraries needed to run BoxCAD.
-
----
-
-### 3. Usage
-
-Start the application by running:
-
-```bash
-python main.py
-```
+## 1. Installation & usage
+You can install and run BoxCAD by simply extracting the .zip file, going into the extracted folder and running the .exe file.
 
 The welcome window will open, in which you can create a project, browse the hardware library and watch tutorials.
 
