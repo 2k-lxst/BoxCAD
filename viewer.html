@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        body { margin: 0; background-color: white; overflow: hidden; }
+        model-viewer { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <!-- <model-viewer id="box_view" camera-controls shadow-intensity="1">
+    </model-viewer> -->
+
+    <model-viewer
+        id="box_view"
+        camera-controls
+        touch-action="pan-y"
+        interpolation-decay="200"
+        camera-orbit="45deg 55deg auto"
+        field-of-view="30deg">
+    </model-viewer>
+
+    <script>
+        // Remove the 'const viewer' from the top.
+
+        function updateMeshFromData(base64String) {
+            // Find the viewer ONLY when this function is called
+            const viewer = document.getElementById('box_view');
+
+            if (!viewer) {
+                console.error("CRITICAL: Could not find the element with ID 'box_view'");
+                return;
+            }
+
+            const dataUrl = "data:application/sla;base64," + base64String;
+            viewer.src = dataUrl;
+
+            console.log("Success! Data sent to viewer.");
+        }
+    </script>
+</body>
+</html>
