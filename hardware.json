@@ -1,0 +1,37 @@
+[
+    {
+        "device": "Arduino Nano V3",
+        "metadata": {
+            "units": "mm",
+            "last_updated": "26-01-2026"
+        },
+        "pcb": {
+            "length": 43.18,
+            "width": 17.78,
+            "thickness": 1.6,
+            "total_height": 19.51
+        },
+        "mounting_holes": {
+            "count": 4,
+            "holePlacement": "tl-tr-bl-br",
+            "diameter": 1.65,
+            "offset_x": 1.9,
+            "offset_y": 1.9
+        },
+        "headers": {
+            "pin_pitch": 2.54,
+            "row_spacing": 15.24,
+            "pin_count": 30
+        },
+        "ports": [
+            {
+                "label": "MiniB-USB",
+                "edge": "back",
+                "center_offset_x": 0,
+                "width": 7.7,
+                "height": 3.8,
+                "protrusion": 1.5
+            }
+        ]
+    }
+]
