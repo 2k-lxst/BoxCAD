@@ -1,45 +1,71 @@
 import os
+import base64
+import cadquery as cq
 from qtpy.QtWidgets import QWidget, QVBoxLayout
+from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
+from qtpy.QtCore import QUrl
 
+import time
 
 class ModelViewer(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        # Initialize OCP Graphic Driver
-        self.display_connection = Aspect_DisplayConnection()
-        self.driver = OpenGl_GraphicDriver(self.display_connection)
+        self.layout = QVBoxLayout(self) # type: ignore
 
-        # Create the Viewer and Context
-        self.viewer = V3d_Viewer(self.driver)
-        self.context = AIS_InteractiveContext(self.viewer)
+        # Initialize the browser
+        self.browser = QWebEngineView()
 
-        # Create the View
-        self.view = self.viewer.CreateView()
+        # Enable local file access
+        self.browser.settings().setAttribute(
+            self.browser.settings().WebAttribute.LocalContentCanAccessFileUrls, True
+        )
+        self.browser.settings().setAttribute(
+            self.browser.settings().WebAttribute.AllowRunningInsecureContent, True
+        )
 
-        # Set the background color (e.g., dark gray for CAD look)
-        self.view.SetBackgroundColor(Quantity_Color(0.2, 0.2, 0.2, Quantity_TOC_RGB))
+        self.layout.addWidget(self.browser) # type: ignore
 
-        # Pass the window ID of the widget to the OCP view
-        handle = Aspect_Handle(int(self.winId()))
-        window_handle = int(self.winId()) # Get the raw integer ID from PySide
-        ocp_window = WNT_Window(handle) # Wrap it in a WNT_Window object so OCP understands it
-        self.view.SetWindow(ocp_window) # Pass the wrapped window to the view
+        settings = self.browser.settings()
+        settings.setAttribute(settings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
+        settings.setAttribute(settings.WebAttribute.LocalContentCanAccessFileUrls, True)
 
-    def display_shape(self, cq_object):
-        """Displays a CaddQuery generated object in the viewer"""
+        # Resolve the path to "viewer.html"
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        html_path = os.path.join(self.base_dir, "viewer.html")
 
-        # CadQuery objects have a .wrapped property that contains the OCP shape
-        ocp_shape = cq_object.val().wrapped
+        # Set the browser URL to that local file
+        self.browser.setUrl(QUrl.fromLocalFile(html_path))
 
-        # Create an AIS (Application Interactive Services) object for rendering
-        ais_shape = AIS_ColoredShape(ocp_shape)
+    # def update_display(self, cq_object):
+    #     """ This is the 'Handshake' between Python and HTML """
 
-        # Display it!
-        self.context.Display(ais_shape, True)
-        self.view.MustBeResized()
-        self.view.Redraw()
+    #     # Parse the path where the .stl file will be saved to
+    #     stl_path = os.path.join(self.base_dir, "model.stl")
 
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.view.MustBeResized()
+    #     # Export the cq_object as 'model.stl'
+    #     cq.exporters.export(cq_object, stl_path, cq.exporters.ExportTypes.STL)
+
+    #     time.sleep(0.1)
+
+    #     # Tell the browser to run the JavaScript function 'updateMesh()'
+    #     self.browser.page().runJavaScript("updateMesh();")
+
+    # TODO: REWRITE THE CODE IF IT WORKS!!!
+
+    def update_display(self, cq_object):
+            self.base_dir = os.path.dirname(os.path.abspath(__file__))
+            stl_path = os.path.join(self.base_dir, "model.stl")
+
+            # 1. Export the STL as usual
+            cq.exporters.export(cq_object, stl_path)
+
+            # 2. Read the file and turn it into a Base64 string
+            with open(stl_path, "rb") as f:
+                data = f.read()
+                base64_data = base64.b64encode(data).decode('utf-8')
+
+            # 3. Pass the string directly into a NEW JavaScript function
+            # We send it as a 'data:application/sla;base64,...' string
+            js_code = f"updateMeshFromData('{base64_data}');"
+            self.browser.page().runJavaScript(js_code)

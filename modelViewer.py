@@ -1,71 +1,33 @@
-import os
-import base64
-import cadquery as cq
+import os, threading, socketserver, http.server
 from qtpy.QtWidgets import QWidget, QVBoxLayout
 from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
 from qtpy.QtCore import QUrl
-
-import time
 
 class ModelViewer(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        # Layout and browser
         self.layout = QVBoxLayout(self) # type: ignore
-
-        # Initialize the browser
         self.browser = QWebEngineView()
-
-        # Enable local file access
-        self.browser.settings().setAttribute(
-            self.browser.settings().WebAttribute.LocalContentCanAccessFileUrls, True
-        )
-        self.browser.settings().setAttribute(
-            self.browser.settings().WebAttribute.AllowRunningInsecureContent, True
-        )
-
         self.layout.addWidget(self.browser) # type: ignore
 
-        settings = self.browser.settings()
-        settings.setAttribute(settings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
-        settings.setAttribute(settings.WebAttribute.LocalContentCanAccessFileUrls, True)
-
-        # Resolve the path to "viewer.html"
+        # Serve the current folder via HTTP on a free port
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        html_path = os.path.join(self.base_dir, "viewer.html")
+        os.chdir(self.base_dir) # Server sereves files from this folder
 
-        # Set the browser URL to that local file
-        self.browser.setUrl(QUrl.fromLocalFile(html_path))
+        handler = http.server.SimpleHTTPRequestHandler
+        self.httpd = socketserver.TCPServer(("", 0), handler) # 0 = Pick a free port
+        port = self.httpd.server_address[1]
 
-    # def update_display(self, cq_object):
-    #     """ This is the 'Handshake' between Python and HTML """
+        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
-    #     # Parse the path where the .stl file will be saved to
-    #     stl_path = os.path.join(self.base_dir, "model.stl")
+        # Load the HTML file through the server
+        self.browser.setUrl(QUrl(f"http://127.0.0.1:{port}/viewer.html"))
 
-    #     # Export the cq_object as 'model.stl'
-    #     cq.exporters.export(cq_object, stl_path, cq.exporters.ExportTypes.STL)
+    def closeEvent(self, event):
+        """ Stop the server when the widget is closed """
 
-    #     time.sleep(0.1)
+        self.httpd.shutdown()
 
-    #     # Tell the browser to run the JavaScript function 'updateMesh()'
-    #     self.browser.page().runJavaScript("updateMesh();")
-
-    # TODO: REWRITE THE CODE IF IT WORKS!!!
-
-    def update_display(self, cq_object):
-            self.base_dir = os.path.dirname(os.path.abspath(__file__))
-            stl_path = os.path.join(self.base_dir, "model.stl")
-
-            # 1. Export the STL as usual
-            cq.exporters.export(cq_object, stl_path)
-
-            # 2. Read the file and turn it into a Base64 string
-            with open(stl_path, "rb") as f:
-                data = f.read()
-                base64_data = base64.b64encode(data).decode('utf-8')
-
-            # 3. Pass the string directly into a NEW JavaScript function
-            # We send it as a 'data:application/sla;base64,...' string
-            js_code = f"updateMeshFromData('{base64_data}');"
-            self.browser.page().runJavaScript(js_code)
+        super().closeEvent(event)
