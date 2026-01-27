@@ -1,7 +1,7 @@
 import sys
 import cadquery as cq
 from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QPushButton, QWidget
-from modelViewer import ModelViewer # Your separated file
+from modelViewer2 import ModelViewer # Your separated file
 
 from PySide6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile
 
