@@ -59,6 +59,8 @@
 
         // Load and compute the model.stl file
         new STLLoader().load("./model.stl", geo => {
+            geo.center()
+
             geo.computeBoundingBox();
 
             const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
@@ -74,21 +76,9 @@
 
             scene.add(mesh);
 
-            const axesHelper = new THREE.AxesHelper(5);
-            scene.add(axesHelper);
-
-            const helper = new THREE.BoxHelper(mesh, 0xffff00);
-            scene.add(helper);
-
-            const gridHelper = new THREE.GridHelper(10, 10);
-            scene.add(gridHelper);
-
             // Camera positioned relative to model size
             const scaleFactor = 2 / maxDimensions;
-            const cameraDistance = 3 * maxDimensions * scaleFactor;
-            // camera.position.set(cameraDistance, cameraDistance, cameraDistance);
             camera.position.set(3, 3, 3);
-            controls.target.set(0, 0, 0);
             controls.update()
         }, undefined, e => console.error(e))
 
