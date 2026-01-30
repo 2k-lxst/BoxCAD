@@ -8,6 +8,7 @@
     <style>
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
         }
 
@@ -17,14 +18,13 @@
     </style>
 </head>
 <body>
-
     <!-- Use the import map to import Three.js -->
-
     <script type="importmap">
         {
             "imports": {
                 "three": "https://threejs.org/build/three.module.js",
-                "three/addons/": "https://threejs.org/examples/jsm/"
+                "three/addons/": "https://threejs.org/examples/jsm/",
+                "libs/": "./libs/"
             }
         }
     </script>
@@ -32,7 +32,151 @@
     <script type="module">
         import * as THREE from "three"
         import { STLLoader } from "three/addons/loaders/STLLoader.js"
+        import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
         import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+        import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
+
+        // Setup the CSS2D renderer
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = "absolute";
+        labelRenderer.domElement.style.top = "0px";
+        labelRenderer.domElement.style.pointerEvents = "none";
+
+        document.body.appendChild(labelRenderer.domElement);
+
+        function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff00ee) {
+            const group = new THREE.Group();
+
+            // Calculate points with the offset
+            const pStart = start.clone().add(offsetVector);
+            const pEnd = end.clone().add(offsetVector);
+
+            const distance = pStart.distanceTo(pEnd);
+            const dir = new THREE.Vector3().subVectors(pEnd, pStart).normalize();
+
+            // Create the main line (thin cylinder)
+            const coneHeight = 0.5; // Must match ConeGeometry height
+            const lineLength = Math.max(0, distance - coneHeight);
+            const lineGeo = new THREE.CylinderGeometry(0.01, 0.01, lineLength, 8);
+            const lineMat = new THREE.MeshStandardMaterial({ color: hexColor });
+            const lineMesh = new THREE.Mesh(lineGeo, lineMat);
+
+            lineMesh.position.copy(pStart).lerp(pEnd, 0.5);
+            lineMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            lineMesh.castShadow = true;
+
+            group.add(lineMesh);
+
+            // Create a smooth Cone Geometry
+            const coneGeo = new THREE.ConeGeometry(0.15, 0.5, 32);
+            const coneMat = new THREE.MeshStandardMaterial({ color: hexColor });
+
+            // First Cone (at pStart)
+            const arrow1 = new THREE.Mesh(coneGeo, coneMat);
+            arrow1.position.copy(pStart);
+
+            // Point the tip toward pEnd, set it's castShadow to true and move it inward by half it's length
+            arrow1.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            arrow1.position.copy(pStart).add(dir.clone().multiplyScalar(coneHeight / 2));
+            arrow1.castShadow = true;
+
+            // Second Cone (at pEnd)
+            const arrow2 = new THREE.Mesh(coneGeo, coneMat);
+            arrow2.position.copy(pEnd);
+
+            // Point the tip toward pStart, set it's castShadow to true and move it inward by half it's length
+            arrow2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().negate());
+            arrow2.position.copy(pEnd).sub(dir.clone().multiplyScalar(coneHeight / 2));
+            arrow2.castShadow = true;
+
+            group.add(arrow1, arrow2);
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = 384;
+            canvas.height = 192;
+
+            // Background + Round Rect
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.strokeStyle = `#${new THREE.Color(hexColor).getHexString()}`;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+
+            if (ctx.roundRect) {
+                ctx.roundRect(5, 5, canvas.width - 10, canvas.height - 10, 20);
+            } else {
+                ctx.rect(5, 5, canvas.width - 10, canvas.height - 10); // Fallback for older browsers
+            }
+
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 80px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillText(labelText, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: true });
+            const label = new THREE.Sprite(spriteMat);
+
+            // Calculate center point
+            const centerX = (pStart.x + pEnd.x) / 2;
+            const centerY = (pStart.y + pEnd.y) / 2;
+            const centerZ = (pStart.z + pEnd.z) / 2;
+
+            const labelPos = new THREE.Vector3(centerX, centerY, centerZ);
+
+            // Find the direction of the line
+            const lineDir = new THREE.Vector3().subVectors(pEnd, pStart).normalize();
+
+            // We want to push the label "outward" or "upward"
+            // If the line is horizontal (X or Z axis), we push it up or out
+            // If the line is vertical (Y axis), we push it to the side
+            const up = new THREE.Vector3(0, 1, 0);
+            let offsetDir = new THREE.Vector3().crossVectors(lineDir, up).normalize();
+
+            // If the line is perfectly vertical, the cross product above fails (0,0,0)
+            // So we check if the line is vertical and use a different axis
+            if (offsetDir.length() < 0.1) {
+                offsetDir.set(1, 0, 0);
+            }
+
+            // Calculate the base center
+            const center = new THREE.Vector3().lerpVectors(pStart, pEnd, 0.5);
+
+            // Check if the offsetDir is pointing "inward" toward the model
+            // 'center' is the middle of the line. If adding offsetDir makes
+            // the point closer to the model's center (0,0,0), we flip it.
+            const testPos = center.clone().add(offsetDir);
+            if (testPos.length() < center.length()) {
+                offsetDir.multiplyScalar(-1);
+            }
+
+            // Apply the 0.3 offset in the calculated direction
+            labelPos.add(offsetDir.multiplyScalar(0.3));
+
+            // Add a small extra Y bump to move the label strictly above the floor
+            labelPos.y += 0.1;
+
+            label.position.copy(labelPos);
+
+            // Calculate the aspect ratio of the canvas (256 / 128 = 2)
+            const aspectRatio = canvas.width / canvas.height;
+
+            // Set the Y scale (height) first, then multiply by aspect ration for X (width)
+            const baseHeight = 0.4;
+
+            label.scale.set(baseHeight * aspectRatio, baseHeight, 1);
+
+            group.add(label);
+
+            scene.add(group);
+        }
 
         // Create a new Three.js scene and set it's background color to a dark gray
         const scene = new THREE.Scene();
@@ -55,6 +199,18 @@
         // Configure a directional light and add it to the scene
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
         dirLight.position.set(5, 10, 7.5);
+
+        // Enable shadows in the renderer
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Update your Directional Light to cast shadows
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+
         scene.add(dirLight);
 
         // Load and compute the model.stl file
@@ -74,7 +230,51 @@
             const maxDimensions = Math.max(size.x, size.y, size.z);
             mesh.scale.setScalar(2 / maxDimensions);
 
+            // Shift the mesh up by half its scaled height
+            // This makes the bottom (min.y) sit exactly at 0 on the gridd.
+            const scaledHeight = (size.y * (2 / maxDimensions));
+
+            mesh.position.y = scaledHeight / 2;
+
             scene.add(mesh);
+
+            // Calculate bounds
+            const box = new THREE.Box3().setFromObject(mesh);
+
+            // size1 = 10 (A major line every 1cm)
+            // size2 = 1  (A minor line every 1mm)
+            const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 100);
+
+            scene.add(grid);
+
+            const gap = 0.5; // Distance away from farthest dimension
+
+            // Width Measurement (X) - red
+            createMeasurement(
+                new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+                new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+                `${Math.round(size.x)}mm`,
+                new THREE.Vector3(0, 0, gap),
+                0xff0000
+            );
+
+            // Height Measurement (Y) - green
+            createMeasurement(
+                new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+                new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+                `${Math.round(size.y)}mm`,
+                new THREE.Vector3(gap, 0, -gap),
+                0x00ff00
+            );
+
+            // Length Measurement (Z) - blue
+            createMeasurement(
+                new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+                new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+                `${Math.round(size.z)}mm`,
+                new THREE.Vector3(gap, 0, 0),
+                0x0000ff
+            );
 
             // Camera positioned relative to model size
             const scaleFactor = 2 / maxDimensions;
@@ -98,6 +298,7 @@
             controls.update();
 
             renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
         })();
     </script>
 </body>
