@@ -10,6 +10,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            background-color: #212121;
         }
 
         canvas {
@@ -34,6 +35,7 @@
         import { STLLoader } from "three/addons/loaders/STLLoader.js"
         import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
         import { OrbitControls } from "three/addons/controls/OrbitControls.js"
+        import { ViewHelper } from "three/addons/helpers/ViewHelper.js"
         import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
 
         // Setup the CSS2D renderer
@@ -55,10 +57,11 @@
             const distance = pStart.distanceTo(pEnd);
             const dir = new THREE.Vector3().subVectors(pEnd, pStart).normalize();
 
-            // Create the main line (thin cylinder)
             const coneHeight = 0.5; // Must match ConeGeometry height
+
+            // Create the main line (thin cylinder)
             const lineLength = Math.max(0, distance - coneHeight);
-            const lineGeo = new THREE.CylinderGeometry(0.01, 0.01, lineLength, 8);
+            const lineGeo = new THREE.CylinderGeometry(0.03, 0.03, lineLength, 8);
             const lineMat = new THREE.MeshStandardMaterial({ color: hexColor });
             const lineMesh = new THREE.Mesh(lineGeo, lineMat);
 
@@ -76,8 +79,8 @@
             const arrow1 = new THREE.Mesh(coneGeo, coneMat);
             arrow1.position.copy(pStart);
 
-            // Point the tip toward pEnd, set it's castShadow to true and move it inward by half it's length
-            arrow1.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            // Point the tip toward pStart, set it's castShadow to true and move it inward by half it's length
+            arrow1.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
             arrow1.position.copy(pStart).add(dir.clone().multiplyScalar(coneHeight / 2));
             arrow1.castShadow = true;
 
@@ -85,8 +88,8 @@
             const arrow2 = new THREE.Mesh(coneGeo, coneMat);
             arrow2.position.copy(pEnd);
 
-            // Point the tip toward pStart, set it's castShadow to true and move it inward by half it's length
-            arrow2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().negate());
+            // Point the tip toward pEnd, set it's castShadow to true and move it inward by half it's length
+            arrow2.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.clone().negate());
             arrow2.position.copy(pEnd).sub(dir.clone().multiplyScalar(coneHeight / 2));
             arrow2.castShadow = true;
 
@@ -102,6 +105,7 @@
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.strokeStyle = `#${new THREE.Color(hexColor).getHexString()}`;
             ctx.lineWidth = 8;
+
             ctx.beginPath();
 
             if (ctx.roundRect) {
@@ -193,6 +197,24 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
+        // Tell renderere not to clear automatically
+        renderer.autoClear = false;
+
+        // Initialize ViewHelper
+        const viewHelper = new ViewHelper(camera, renderer.domElement);
+
+        // Create a clickable overlay for the Gizmo
+        const helperContainer = document.createElement('div');
+        helperContainer.style.position = 'absolute';
+        helperContainer.style.right = '0';
+        helperContainer.style.top = '0'; // Positioned at top right
+        helperContainer.style.width = '128px';
+        helperContainer.style.height = '128px';
+        helperContainer.style.cursor = 'pointer';
+        helperContainer.style.zIndex = '100';
+
+        document.body.appendChild(helperContainer);
+
         // Add and configure a new ambient light
         scene.add(new THREE.AmbientLight(0xffffff, 0.5))
 
@@ -213,8 +235,8 @@
 
         scene.add(dirLight);
 
-        // Load and compute the model.stl file
         new STLLoader().load("./model.stl", geo => {
+        // Load and compute the model.stl file
             geo.center()
 
             geo.computeBoundingBox();
@@ -297,8 +319,13 @@
 
             controls.update();
 
+            renderer.clear();
+
+            // 2. Render main scene (Full Window)
             renderer.render(scene, camera);
+
             labelRenderer.render(scene, camera);
+            viewHelper.render(renderer);
         })();
     </script>
 </body>
