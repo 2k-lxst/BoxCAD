@@ -113,7 +113,7 @@
   <widget class="QDockWidget" name="parametersDock">
    <property name="minimumSize">
     <size>
-     <width>200</width>
+     <width>250</width>
      <height>374</height>
     </size>
    </property>
@@ -171,7 +171,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>176</width>
+          <width>226</width>
           <height>142</height>
          </rect>
         </property>
@@ -182,16 +182,31 @@
          <property name="sizeConstraint">
           <enum>QLayout::SetMinAndMaxSize</enum>
          </property>
+         <property name="rowWrapPolicy">
+          <enum>QFormLayout::DontWrapRows</enum>
+         </property>
+         <property name="horizontalSpacing">
+          <number>20</number>
+         </property>
          <item row="0" column="0">
           <widget class="QLabel" name="lengthLabel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="font">
             <font>
              <family>Inter 18pt</family>
              <pointsize>8</pointsize>
             </font>
            </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
            <property name="text">
-            <string>Length (X)</string>
+            <string>Internal Length (X)</string>
            </property>
           </widget>
          </item>
@@ -202,6 +217,12 @@
              <width>0</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="wrapping">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -214,7 +235,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Width (Y)</string>
+            <string>Internal Width (Y)</string>
            </property>
           </widget>
          </item>
@@ -230,7 +251,7 @@
             </font>
            </property>
            <property name="text">
-            <string>Height (Z)</string>
+            <string>Internal Height (Z)</string>
            </property>
           </widget>
          </item>
@@ -276,13 +297,121 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>176</width>
-          <height>116</height>
+          <width>209</width>
+          <height>205</height>
          </rect>
         </property>
         <attribute name="label">
          <string>Internal Hardware</string>
         </attribute>
+        <layout class="QFormLayout" name="formLayout_3">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lengthLabel_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <family>Inter 18pt</family>
+             <pointsize>8</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="text">
+            <string>PCB Standoff Height</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QDoubleSpinBox" name="lengthInput_2">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="wrapping">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="widthLabel_2">
+           <property name="font">
+            <font>
+             <family>Inter 18pt</family>
+             <pointsize>8</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>PCB Hole Pattern</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="heightLabel_4">
+           <property name="font">
+            <font>
+             <family>Inter 18pt</family>
+             <pointsize>8</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Screw Boss Diameter</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QDoubleSpinBox" name="heightInput_4"/>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="heightLabel_5">
+           <property name="font">
+            <font>
+             <family>Inter 18pt</family>
+             <pointsize>8</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Screw Hole Diameter</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QDoubleSpinBox" name="heightInput_5"/>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="heightLabel_6">
+           <property name="font">
+            <font>
+             <family>Inter 18pt</family>
+             <pointsize>8</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Corner Radius</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QDoubleSpinBox" name="heightInput_6"/>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPlainTextEdit" name="plainTextEdit">
+           <property name="placeholderText">
+            <string>One hole per line. Use format: X, Y</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
      </item>
