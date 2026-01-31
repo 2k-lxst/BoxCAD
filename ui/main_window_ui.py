@@ -18,8 +18,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QDockWidget, QDoubleSpinBox, QFormLayout,
     QFrame, QGridLayout, QLabel, QLayout,
-    QMainWindow, QMenu, QMenuBar, QSizePolicy,
-    QStatusBar, QToolBox, QWidget)
+    QMainWindow, QMenu, QMenuBar, QPlainTextEdit,
+    QSizePolicy, QStatusBar, QToolBox, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -77,7 +77,7 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.outputDock)
         self.parametersDock = QDockWidget(MainWindow)
         self.parametersDock.setObjectName(u"parametersDock")
-        self.parametersDock.setMinimumSize(QSize(200, 374))
+        self.parametersDock.setMinimumSize(QSize(250, 374))
         self.parametersDock.setMaximumSize(QSize(524287, 524287))
         self.dockWidgetContents = QWidget()
         self.dockWidgetContents.setObjectName(u"dockWidgetContents")
@@ -96,22 +96,29 @@ class Ui_MainWindow(object):
         self.toolBox.setMinimumSize(QSize(0, 170))
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
-        self.page_3.setGeometry(QRect(0, 0, 176, 142))
+        self.page_3.setGeometry(QRect(0, 0, 226, 142))
         self.formLayout_2 = QFormLayout(self.page_3)
         self.formLayout_2.setObjectName(u"formLayout_2")
         self.formLayout_2.setSizeConstraint(QLayout.SetMinAndMaxSize)
+        self.formLayout_2.setRowWrapPolicy(QFormLayout.DontWrapRows)
+        self.formLayout_2.setHorizontalSpacing(20)
         self.lengthLabel = QLabel(self.page_3)
         self.lengthLabel.setObjectName(u"lengthLabel")
+        sizePolicy.setHeightForWidth(self.lengthLabel.sizePolicy().hasHeightForWidth())
+        self.lengthLabel.setSizePolicy(sizePolicy)
         font = QFont()
         font.setFamilies([u"Inter 18pt"])
         font.setPointSize(8)
         self.lengthLabel.setFont(font)
+        self.lengthLabel.setStyleSheet(u"")
 
         self.formLayout_2.setWidget(0, QFormLayout.ItemRole.LabelRole, self.lengthLabel)
 
         self.lengthInput = QDoubleSpinBox(self.page_3)
         self.lengthInput.setObjectName(u"lengthInput")
         self.lengthInput.setMinimumSize(QSize(0, 0))
+        self.lengthInput.setStyleSheet(u"")
+        self.lengthInput.setWrapping(False)
 
         self.formLayout_2.setWidget(0, QFormLayout.ItemRole.FieldRole, self.lengthInput)
 
@@ -162,7 +169,70 @@ class Ui_MainWindow(object):
         self.toolBox.addItem(self.page_3, u"Dimensions")
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
-        self.page_4.setGeometry(QRect(0, 0, 176, 116))
+        self.page_4.setGeometry(QRect(0, 0, 209, 205))
+        self.formLayout_3 = QFormLayout(self.page_4)
+        self.formLayout_3.setObjectName(u"formLayout_3")
+        self.lengthLabel_2 = QLabel(self.page_4)
+        self.lengthLabel_2.setObjectName(u"lengthLabel_2")
+        sizePolicy.setHeightForWidth(self.lengthLabel_2.sizePolicy().hasHeightForWidth())
+        self.lengthLabel_2.setSizePolicy(sizePolicy)
+        self.lengthLabel_2.setFont(font)
+        self.lengthLabel_2.setStyleSheet(u"")
+
+        self.formLayout_3.setWidget(0, QFormLayout.ItemRole.LabelRole, self.lengthLabel_2)
+
+        self.lengthInput_2 = QDoubleSpinBox(self.page_4)
+        self.lengthInput_2.setObjectName(u"lengthInput_2")
+        self.lengthInput_2.setMinimumSize(QSize(0, 0))
+        self.lengthInput_2.setStyleSheet(u"")
+        self.lengthInput_2.setWrapping(False)
+
+        self.formLayout_3.setWidget(0, QFormLayout.ItemRole.FieldRole, self.lengthInput_2)
+
+        self.widthLabel_2 = QLabel(self.page_4)
+        self.widthLabel_2.setObjectName(u"widthLabel_2")
+        self.widthLabel_2.setFont(font)
+
+        self.formLayout_3.setWidget(1, QFormLayout.ItemRole.LabelRole, self.widthLabel_2)
+
+        self.heightLabel_4 = QLabel(self.page_4)
+        self.heightLabel_4.setObjectName(u"heightLabel_4")
+        self.heightLabel_4.setFont(font)
+
+        self.formLayout_3.setWidget(4, QFormLayout.ItemRole.LabelRole, self.heightLabel_4)
+
+        self.heightInput_4 = QDoubleSpinBox(self.page_4)
+        self.heightInput_4.setObjectName(u"heightInput_4")
+
+        self.formLayout_3.setWidget(4, QFormLayout.ItemRole.FieldRole, self.heightInput_4)
+
+        self.heightLabel_5 = QLabel(self.page_4)
+        self.heightLabel_5.setObjectName(u"heightLabel_5")
+        self.heightLabel_5.setFont(font)
+
+        self.formLayout_3.setWidget(5, QFormLayout.ItemRole.LabelRole, self.heightLabel_5)
+
+        self.heightInput_5 = QDoubleSpinBox(self.page_4)
+        self.heightInput_5.setObjectName(u"heightInput_5")
+
+        self.formLayout_3.setWidget(5, QFormLayout.ItemRole.FieldRole, self.heightInput_5)
+
+        self.heightLabel_6 = QLabel(self.page_4)
+        self.heightLabel_6.setObjectName(u"heightLabel_6")
+        self.heightLabel_6.setFont(font)
+
+        self.formLayout_3.setWidget(6, QFormLayout.ItemRole.LabelRole, self.heightLabel_6)
+
+        self.heightInput_6 = QDoubleSpinBox(self.page_4)
+        self.heightInput_6.setObjectName(u"heightInput_6")
+
+        self.formLayout_3.setWidget(6, QFormLayout.ItemRole.FieldRole, self.heightInput_6)
+
+        self.plainTextEdit = QPlainTextEdit(self.page_4)
+        self.plainTextEdit.setObjectName(u"plainTextEdit")
+
+        self.formLayout_3.setWidget(1, QFormLayout.ItemRole.FieldRole, self.plainTextEdit)
+
         self.toolBox.addItem(self.page_4, u"Internal Hardware")
 
         self.formLayout.setWidget(0, QFormLayout.ItemRole.SpanningRole, self.toolBox)
@@ -191,12 +261,18 @@ class Ui_MainWindow(object):
         self.menuExit.setTitle(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.outputDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Hardware Library", None))
         self.parametersDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
-        self.lengthLabel.setText(QCoreApplication.translate("MainWindow", u"Length (X)", None))
-        self.widthLabel.setText(QCoreApplication.translate("MainWindow", u"Width (Y)", None))
-        self.heightLabel.setText(QCoreApplication.translate("MainWindow", u"Height (Z)", None))
+        self.lengthLabel.setText(QCoreApplication.translate("MainWindow", u"Internal Length (X)", None))
+        self.widthLabel.setText(QCoreApplication.translate("MainWindow", u"Internal Width (Y)", None))
+        self.heightLabel.setText(QCoreApplication.translate("MainWindow", u"Internal Height (Z)", None))
         self.heightLabel_2.setText(QCoreApplication.translate("MainWindow", u"Wall Thickness", None))
         self.heightLabel_3.setText(QCoreApplication.translate("MainWindow", u"Corner Radius", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.page_3), QCoreApplication.translate("MainWindow", u"Dimensions", None))
+        self.lengthLabel_2.setText(QCoreApplication.translate("MainWindow", u"PCB Standoff Height", None))
+        self.widthLabel_2.setText(QCoreApplication.translate("MainWindow", u"PCB Hole Pattern", None))
+        self.heightLabel_4.setText(QCoreApplication.translate("MainWindow", u"Screw Boss Diameter", None))
+        self.heightLabel_5.setText(QCoreApplication.translate("MainWindow", u"Screw Hole Diameter", None))
+        self.heightLabel_6.setText(QCoreApplication.translate("MainWindow", u"Corner Radius", None))
+        self.plainTextEdit.setPlaceholderText(QCoreApplication.translate("MainWindow", u"One hole per line. Use format: X, Y", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.page_4), QCoreApplication.translate("MainWindow", u"Internal Hardware", None))
     # retranslateUi
 
