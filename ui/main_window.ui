@@ -149,139 +149,35 @@
      <property name="bottomMargin">
       <number>12</number>
      </property>
-     <item row="0" column="0" colspan="2">
-      <widget class="QToolBox" name="toolBox">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>170</height>
-        </size>
-       </property>
+     <item row="0" column="1">
+      <widget class="QToolBox" name="parametersToolBox">
        <property name="currentIndex">
         <number>0</number>
        </property>
-       <widget class="QWidget" name="page_3">
+       <widget class="QWidget" name="page">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>176</width>
-          <height>142</height>
+          <width>170</width>
+          <height>69</height>
          </rect>
         </property>
         <attribute name="label">
-         <string>Dimensions</string>
+         <string>Page 1</string>
         </attribute>
-        <layout class="QFormLayout" name="formLayout_2">
-         <property name="sizeConstraint">
-          <enum>QLayout::SetMinAndMaxSize</enum>
-         </property>
-         <item row="0" column="0">
-          <widget class="QLabel" name="lengthLabel">
-           <property name="font">
-            <font>
-             <family>Inter 18pt</family>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Length (X)</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QDoubleSpinBox" name="lengthInput">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="widthLabel">
-           <property name="font">
-            <font>
-             <family>Inter 18pt</family>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Width (Y)</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="widthInput"/>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="heightLabel">
-           <property name="font">
-            <font>
-             <family>Inter 18pt</family>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Height (Z)</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QDoubleSpinBox" name="heightInput"/>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="heightLabel_2">
-           <property name="font">
-            <font>
-             <family>Inter 18pt</family>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Wall Thickness</string>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1">
-          <widget class="QDoubleSpinBox" name="heightInput_2"/>
-         </item>
-         <item row="4" column="1">
-          <widget class="QDoubleSpinBox" name="heightInput_3"/>
-         </item>
-         <item row="4" column="0">
-          <widget class="QLabel" name="heightLabel_3">
-           <property name="font">
-            <font>
-             <family>Inter 18pt</family>
-             <pointsize>8</pointsize>
-            </font>
-           </property>
-           <property name="text">
-            <string>Corner Radius</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
-       <widget class="QWidget" name="page_4">
+       <widget class="QWidget" name="page_2">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>176</width>
-          <height>116</height>
+          <width>170</width>
+          <height>69</height>
          </rect>
         </property>
         <attribute name="label">
-         <string>Internal Hardware</string>
+         <string>Page 2</string>
         </attribute>
        </widget>
       </widget>
