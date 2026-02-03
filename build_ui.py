@@ -126,7 +126,7 @@ class BuildUI:
         layout.addRow("Standoff Diameter:", standoff_diameter_input)
         self.widgets["standoff_diameter"] = standoff_diameter_input
 
-        # Custom standoff location definer
+        # Define PCB standoff location
         self.pcb_coordinates_input = QPlainTextEdit()
         self.pcb_coordinates_input.setMaximumHeight(150)
         self.pcb_coordinates_input.setMaximumWidth(170)
