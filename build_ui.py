@@ -9,7 +9,7 @@ To add a standard input row inside a build function:
     layout.addRow("Label Name:", spin_box)
 """
 
-from qtpy.QtWidgets import QWidget, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
 
@@ -152,8 +152,50 @@ class BuildUI:
     def build_cutouts_page(self):
         page, layout = self.create_form_page()
 
-        # --- FILL THIS OUT ---
-        # Hint: Add Side selection and Dimension inputs
+        # The creator zone
+        # This where the user defines the next cutout to add
+        creator_box = QGroupBox("Add New Cutout")
+        creator_layout = QFormLayout()
+
+        self.cutout_face = QComboBox()
+        self.cutout_face.addItems(["Front", "Back", "Top", "Bottom", "Left", "Right"])
+
+        self.cutout_shape = QComboBox()
+        self.cutout_shape.addItems(["Rectangle", "Circle"])
+
+        # CHALLENGE: Create two QDoubleSpinBoxes for X and Y coordinates
+        # Hint: Use self.cutout_x and self.cutout_y
+        # --- YOUR CODE HERE ---
+
+        # Add items to the creator form
+        creator_layout.addRow("Target Face:", self.cutout_face)
+        creator_layout.addRow("Shape:", self.cutout_shape)
+
+        self.add_cutout_btn = QPushButton("Add Cutout to List")
+        # self.add_cutout_btn.clicked.connect(self.add_cutout_action)
+
+        creator_layout.addRow(self.add_cutout_btn)
+
+        creator_box.setLayout(creator_layout)
+
+        layout.addRow(creator_box)
+
+        # The managerr zone
+        # This is where the list lives
+        layout.addRow(QLabel("<b>Active Cutouts:</b>"))
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setMinimumHeight(200)
+
+        self.manager_container = QWidget()
+
+        self.manager_layout = QVBoxLayout(self.manager_container)
+        self.manager_layout.setAlignment(Qt.AlignTop) # Keeps items at the top # type: ignore
+
+        self.scroll_area.setWidget(self.manager_container)
+
+        layout.addRow(self.scroll_area)
 
         self.add_vertical_spacer(layout)
 
