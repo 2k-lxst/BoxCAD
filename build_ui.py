@@ -155,21 +155,23 @@ class BuildUI:
         # The creator zone
         # This where the user defines the next cutout to add
         creator_box = QGroupBox("Add New Cutout")
+
         creator_layout = QFormLayout()
 
         self.cutout_face = QComboBox()
-        self.cutout_face.addItems(["Front", "Back", "Top", "Bottom", "Left", "Right"])
+        self.cutout_face.addItems(["Left (-X)", "Right (+X)", "Front (-Y)", "Back (+Y)", "Bottom (-Z)", "Top (+Z)"])
 
         self.cutout_shape = QComboBox()
         self.cutout_shape.addItems(["Rectangle", "Circle"])
 
-        # CHALLENGE: Create two QDoubleSpinBoxes for X and Y coordinates
-        # Hint: Use self.cutout_x and self.cutout_y
-        # --- YOUR CODE HERE ---
+        self.cutout_x = QDoubleSpinBox()
+        self.cutout_y = QDoubleSpinBox()
 
         # Add items to the creator form
         creator_layout.addRow("Target Face:", self.cutout_face)
         creator_layout.addRow("Shape:", self.cutout_shape)
+        creator_layout.addRow("X:", self.cutout_x)
+        creator_layout.addRow("Y:", self.cutout_y)
 
         self.add_cutout_btn = QPushButton("Add Cutout to List")
         # self.add_cutout_btn.clicked.connect(self.add_cutout_action)
@@ -180,20 +182,37 @@ class BuildUI:
 
         layout.addRow(creator_box)
 
-        # The managerr zone
+        # The manager zone
         # This is where the list lives
-        layout.addRow(QLabel("<b>Active Cutouts:</b>"))
+        layout.addRow(QLabel("Active Cutouts:"))
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setMinimumHeight(200)
+        # self.scroll_area.setMaximumWidth(100)
+
+        self.no_cutouts_label = QLabel("No Cutouts Active")
+
+        self.no_cutouts_label.setStyleSheet("""
+            QLabel {
+                color: #777777;
+                font-weight: bold;
+                font-size: 13px;
+                letter-spacing: 1px;
+            }
+        """)
+
+        self.no_cutouts_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.no_cutouts_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.no_cutouts_label.setFixedHeight(100)
+        self.no_cutouts_label.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
         self.manager_container = QWidget()
-
         self.manager_layout = QVBoxLayout(self.manager_container)
         self.manager_layout.setAlignment(Qt.AlignTop) # Keeps items at the top # type: ignore
-
         self.scroll_area.setWidget(self.manager_container)
+
+        self.manager_layout.addWidget(self.no_cutouts_label)
 
         layout.addRow(self.scroll_area)
 
@@ -209,7 +228,6 @@ class BuildUI:
 
     def populate_toolbox(self, toolbox: QToolBox):
         """Clears and rebuilds the toolbox pages."""
-
         while toolbox.count() > 0:
             toolbox.removeItem(0)
 
@@ -217,3 +235,18 @@ class BuildUI:
         toolbox.addItem(self.build_assembly_page(), "Lid && Joinery")
         toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
         toolbox.addItem(self.build_cutouts_page(), "Cutouts && Ports")
+
+    def refresh_empty_state(self):
+        item_count = self.manager_layout.count() - 1 # Subtract 1 because the label is part of the layout
+
+        if item_count > 0:
+            self.no_cutouts_label.hide()
+        else:
+            self.no_cutouts_label.show()
+
+# TODO: Implement Reactive Toolbox Transition
+# 1. In __init__, set self.project_initialized = False.
+# 2. In populate_toolbox(), use a 'while toolbox.count() > 0: toolbox.removeItem(0)' loop.
+# 3. Use an if/else: if not initialized, add QWidget() as a placeholder.
+# 4. CRITICAL: In the 'Generate/Build' button handler, flip the flag to True
+#   and CALL self.populate_toolbox(self.toolbox) again to swap the tabs.
