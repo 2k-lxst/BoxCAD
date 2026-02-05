@@ -48,7 +48,7 @@ class BuildUI:
 
         explainer = QLabel(
             "<h1><b>Welcome to BoxCAD!</b></h1><hr>"
-
+            "BoxCAD is a high-fidelity parametric engine designed to bridge the critical gap between internal electronic component architectures and their external physical protection, utilizing logic-driven geometry to automate the path from circuit design to precision-engineered chassis."
             "<h3>To begin your design:</h3>"
             "<ul>"
                 "<li>Set your base dimensions</li>"
