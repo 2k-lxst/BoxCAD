@@ -15,8 +15,13 @@ from qtpy.QtGui import QFont
 
 class BuildUI:
     def __init__(self):
+        super().__init__()
+
         # Dictionary to store references to widgets for easy access later
         self.widgets = {}
+
+        # Bool to describe if the project is initialized yet
+        self.project_initialized = False
 
     def create_form_page(self):
         """Creates a page with the specific layout constraints requested."""
@@ -31,6 +36,43 @@ class BuildUI:
         layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow) # type: ignore
 
         return page, layout
+
+    def build_welcome_page(self):
+        """Creates the landing page for the toolbox."""
+        page = QWidget()
+
+        # Configure the layout of the page
+        layout = QVBoxLayout(page)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+
+        explainer = QLabel(
+            "<h1><b>Welcome to BoxCAD!</b></h1><hr>"
+
+            "<h3>To begin your design:</h3>"
+            "<ul>"
+                "<li>Set your base dimensions</li>"
+                "<li>Click the button below to initialize the project</li>"
+            "</ul>"
+            "<i>This will unlock all editing tools</i>"
+        )
+
+        # Style and configure the explainer text
+        explainer.setStyleSheet("color: #777777; font-size: 13px;")
+        explainer.setWordWrap(True)
+        explainer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Create and style the initialize project button
+        self.initialize_btn = QPushButton("Initialize Project")
+        self.initialize_btn.setMinimumHeight(40)
+
+        # Add to layout
+        layout.addStretch()
+        layout.addWidget(explainer)
+        layout.addWidget(self.initialize_btn)
+        layout.addStretch()
+
+        return page
 
     def build_dimensions_page(self):
         page, layout = self.create_form_page()
@@ -153,7 +195,6 @@ class BuildUI:
         page, layout = self.create_form_page()
 
         # The creator zone
-        # This where the user defines the next cutout to add
         creator_box = QGroupBox("Add New Cutout")
 
         creator_layout = QFormLayout()
@@ -183,7 +224,6 @@ class BuildUI:
         layout.addRow(creator_box)
 
         # The manager zone
-        # This is where the list lives
         layout.addRow(QLabel("Active Cutouts:"))
 
         self.scroll_area = QScrollArea()
@@ -228,13 +268,18 @@ class BuildUI:
 
     def populate_toolbox(self, toolbox: QToolBox):
         """Clears and rebuilds the toolbox pages."""
+        self.print_to_console("Populating toolbox!", "info")
+
         while toolbox.count() > 0:
             toolbox.removeItem(0)
 
-        toolbox.addItem(self.build_dimensions_page(), "Dimensions")
-        toolbox.addItem(self.build_assembly_page(), "Lid && Joinery")
-        toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
-        toolbox.addItem(self.build_cutouts_page(), "Cutouts && Ports")
+        if not self.project_initialized:
+            toolbox.addItem(self.build_welcome_page(), "Getting Started")
+        else:
+            toolbox.addItem(self.build_dimensions_page(), "Dimensions")
+            toolbox.addItem(self.build_assembly_page(), "Lid && Joinery")
+            toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
+            toolbox.addItem(self.build_cutouts_page(), "Cutouts && Ports")
 
     def refresh_empty_state(self):
         item_count = self.manager_layout.count() - 1 # Subtract 1 because the label is part of the layout
@@ -244,9 +289,14 @@ class BuildUI:
         else:
             self.no_cutouts_label.show()
 
-# TODO: Implement Reactive Toolbox Transition
-# 1. In __init__, set self.project_initialized = False.
-# 2. In populate_toolbox(), use a 'while toolbox.count() > 0: toolbox.removeItem(0)' loop.
-# 3. Use an if/else: if not initialized, add QWidget() as a placeholder.
-# 4. CRITICAL: In the 'Generate/Build' button handler, flip the flag to True
-#   and CALL self.populate_toolbox(self.toolbox) again to swap the tabs.
+    def print_to_console(self, message = "No message was provided!", type = "info"):
+        from termcolor import colored
+
+        if type == "info":
+            print(colored("[INFO] " + message, "blue"))
+        elif type == "warning":
+            print(colored("[WARNING] " + message, "yellow"))
+        elif type == "error":
+            print(colored("[ERROR] " + message, "red"))
+        elif type == "success":
+            print(colored("[SUCCESS] " + message, "green"))
