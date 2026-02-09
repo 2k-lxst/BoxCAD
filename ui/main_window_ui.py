@@ -17,8 +17,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QDockWidget, QFormLayout, QFrame,
-    QGridLayout, QMainWindow, QMenu, QMenuBar,
-    QSizePolicy, QStatusBar, QToolBox, QWidget)
+    QMainWindow, QMenu, QMenuBar, QSizePolicy,
+    QStatusBar, QToolBox, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -34,8 +34,8 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         sizePolicy.setHeightForWidth(self.centralwidget.sizePolicy().hasHeightForWidth())
         self.centralwidget.setSizePolicy(sizePolicy)
-        self.gridLayout = QGridLayout(self.centralwidget)
-        self.gridLayout.setObjectName(u"gridLayout")
+        self.verticalLayout = QVBoxLayout(self.centralwidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
         self.viewer = QFrame(self.centralwidget)
         self.viewer.setObjectName(u"viewer")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -48,7 +48,7 @@ class Ui_MainWindow(object):
         self.viewer.setFrameShape(QFrame.StyledPanel)
         self.viewer.setFrameShadow(QFrame.Raised)
 
-        self.gridLayout.addWidget(self.viewer, 0, 0, 1, 1)
+        self.verticalLayout.addWidget(self.viewer)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
@@ -76,25 +76,31 @@ class Ui_MainWindow(object):
         MainWindow.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.outputDock)
         self.parametersDock = QDockWidget(MainWindow)
         self.parametersDock.setObjectName(u"parametersDock")
-        self.parametersDock.setMinimumSize(QSize(200, 374))
+        sizePolicy.setHeightForWidth(self.parametersDock.sizePolicy().hasHeightForWidth())
+        self.parametersDock.setSizePolicy(sizePolicy)
+        self.parametersDock.setMinimumSize(QSize(200, 555))
         self.parametersDock.setMaximumSize(QSize(524287, 524287))
         self.dockWidgetContents = QWidget()
         self.dockWidgetContents.setObjectName(u"dockWidgetContents")
+        sizePolicy.setHeightForWidth(self.dockWidgetContents.sizePolicy().hasHeightForWidth())
+        self.dockWidgetContents.setSizePolicy(sizePolicy)
         self.formLayout = QFormLayout(self.dockWidgetContents)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        self.formLayout.setRowWrapPolicy(QFormLayout.DontWrapRows)
         self.formLayout.setVerticalSpacing(10)
         self.formLayout.setContentsMargins(12, 10, 12, 12)
         self.parametersToolBox = QToolBox(self.dockWidgetContents)
         self.parametersToolBox.setObjectName(u"parametersToolBox")
+        sizePolicy.setHeightForWidth(self.parametersToolBox.sizePolicy().hasHeightForWidth())
+        self.parametersToolBox.setSizePolicy(sizePolicy)
         self.page = QWidget()
         self.page.setObjectName(u"page")
-        self.page.setGeometry(QRect(0, 0, 170, 69))
-        self.parametersToolBox.addItem(self.page, u"Page 1")
-        self.page_2 = QWidget()
-        self.page_2.setObjectName(u"page_2")
-        self.page_2.setGeometry(QRect(0, 0, 170, 69))
-        self.parametersToolBox.addItem(self.page_2, u"Page 2")
+        self.page.setGeometry(QRect(0, 0, 300, 52))
+        sizePolicy.setHeightForWidth(self.page.sizePolicy().hasHeightForWidth())
+        self.page.setSizePolicy(sizePolicy)
+        self.page.setMinimumSize(QSize(300, 0))
+        self.parametersToolBox.addItem(self.page, u"Getting Started...")
 
         self.formLayout.setWidget(0, QFormLayout.ItemRole.FieldRole, self.parametersToolBox)
 
@@ -109,6 +115,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.parametersToolBox.setCurrentIndex(0)
+        self.parametersToolBox.layout().setSpacing(7)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -122,7 +129,6 @@ class Ui_MainWindow(object):
         self.menuExit.setTitle(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.outputDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Hardware Library", None))
         self.parametersDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
-        self.parametersToolBox.setItemText(self.parametersToolBox.indexOf(self.page), QCoreApplication.translate("MainWindow", u"Page 1", None))
-        self.parametersToolBox.setItemText(self.parametersToolBox.indexOf(self.page_2), QCoreApplication.translate("MainWindow", u"Page 2", None))
+        self.parametersToolBox.setItemText(self.parametersToolBox.indexOf(self.page), QCoreApplication.translate("MainWindow", u"Getting Started...", None))
     # retranslateUi
 
