@@ -67,7 +67,6 @@ class BuildUI:
         self.initialize_btn.setMinimumHeight(40)
 
         # Add to layout
-        layout.addStretch()
         layout.addWidget(explainer)
         layout.addWidget(self.initialize_btn)
         layout.addStretch()
@@ -270,12 +269,28 @@ class BuildUI:
         """Clears and rebuilds the toolbox pages."""
         self.print_to_console("Populating toolbox!", "info")
 
-        while toolbox.count() > 0:
-            toolbox.removeItem(0)
+        toolbox.setMinimumWidth(300)
+
+        page_0 = toolbox.widget(0)
+
+        layout = page_0.layout()
+
+        if layout is None:
+            layout = QVBoxLayout(page_0)
 
         if not self.project_initialized:
-            toolbox.addItem(self.build_welcome_page(), "Getting Started")
+            self.print_to_console("Project not initialized yet! Building welcome page...", "info")
+
+            welcome_widget = self.build_welcome_page()
+
+            toolbox.setMinimumWidth(300)
+
+            layout.addWidget(welcome_widget)
+
+            self.print_to_console("Welcome page was built successfully!", "success")
         else:
+            toolbox.setMinimumWidth(0)
+
             toolbox.addItem(self.build_dimensions_page(), "Dimensions")
             toolbox.addItem(self.build_assembly_page(), "Lid && Joinery")
             toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
@@ -292,11 +307,8 @@ class BuildUI:
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored
 
-        if type == "info":
-            print(colored("[INFO] " + message, "blue"))
-        elif type == "warning":
-            print(colored("[WARNING] " + message, "yellow"))
-        elif type == "error":
-            print(colored("[ERROR] " + message, "red"))
-        elif type == "success":
-            print(colored("[SUCCESS] " + message, "green"))
+        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey"}
+
+        color = colors.get(type, "white")
+
+        print(colored(f"[{type.upper()}] {message}", color))
