@@ -1,49 +1,77 @@
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QDoubleSpinBox, QPlainTextEdit
+import os
+import cadquery as cq
+from PyQt6.QtWidgets import QApplication, QMainWindow, QToolBox, QHBoxLayout, QWidget, QSplitter
+from PyQt6.QtCore import Qt
 
-# Import compiled UI class and Resources
+# Import UI class
 from ui.main_window_ui import Ui_MainWindow
 
-from modelViewer import ModelViewer
+# Import custom classes
 from build_ui import BuildUI
+from model_viewer import ModelViewer
 
-class TestWindow(QMainWindow):
+class BoxCAD(QMainWindow):
     def __init__(self):
         super().__init__()
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.build_ui = BuildUI()
+        self.setWindowTitle("BoxCAD - Parametric Enclosure Engine")
+        self.resize(1200, 800)
 
-        self.build_ui.populate_toolbox(self.ui.parametersToolBox) # type: ignore
+        # Initialize components
+        self.ui_builder = BuildUI()
+        self.viewer = self.ui.viewer
 
-        self.setup_testing_connections()
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
 
-        # Set a title for the test UI
-        self.setWindowTitle("BoxCAD - UI Test Environment")
+        self.ui_builder.initialize_btn.clicked.connect(self.init_project)
 
-        # --- Embed ModelViewer ---
-        container = self.ui.viewer  # QWidget from Designer # type: ignore
-        layout = QVBoxLayout(container)  # Add a layout to the placeholder # type: ignore
-        self.viewer = ModelViewer()       # Create your viewer widget
-        layout.addWidget(self.viewer)     # Put the viewer in the layout
+    def init_project(self):
+        self.ui_builder.project_initialized = True
 
-    def setup_testing_connections(self):
-        # We look for the widgets we stored in the factory's dictionary
-        for name, widget in self.build_ui.widgets.items():
-            if isinstance(widget, QDoubleSpinBox):
-                widget.valueChanged.connect(lambda val, n=name: self.debug_print(n, val))
-            elif isinstance(widget, QPlainTextEdit):
-                widget.textChanged.connect(lambda n=name: self.debug_print(n, "Text Updated"))
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
 
-    def debug_print(self, name, value):
-        print(f"TEST: Parameter '{name}' changed to: {value}")
+        # TODO: self.rebuild geometry
+        # TODO: self.connecet ui signals
 
+        self.connect_ui_signals()
+        self.rebuild_geometry()
+
+        self.print_to_console("Project initialized!", "success")
+
+    def connect_ui_signals(self):
+        self.ui_builder.widgets["length"].valueChanged.connect(self.rebuild_geometry)
+        self.ui_builder.widgets["width"].valueChanged.connect(self.rebuild_geometry)
+        self.ui_builder.widgets["height"].valueChanged.connect(self.rebuild_geometry)
+
+    def rebuild_geometry(self):
+        try:
+            l = self.ui_builder.widgets["length"].value()
+            w = self.ui_builder.widgets["width"].value()
+            h = self.ui_builder.widgets["height"].value()
+
+            result = cq.Workplane("XY").box(l, w, h)
+
+            self.viewer.update_display(result)
+
+        except Exception as e:
+            self.print_to_console(str(e), "error")
+
+    def print_to_console(self, message = "No message was provided!", type = "info"):
+        from termcolor import colored
+
+        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey"}
+
+        color = colors.get(type, "white")
+
+        print(colored(f"[{type.upper()}] {message}", color))
+
+# 5. THE ENGINE: This block makes the window actually appear
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
-    app.setStyle("Fusion")
-
-    window = TestWindow()
+    window = BoxCAD()
     window.show()
     sys.exit(app.exec())

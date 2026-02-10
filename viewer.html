@@ -609,6 +609,18 @@
             }, 300); // Artificial delay
         }
 
+        function updateMesh(newUrl) {
+            const viewer = document.getElementById("viewer");
+
+            if (viewer) {
+                viewer.src = newUrl;
+
+                console.log("Model refreshed via: " + newUrl);
+            } else {
+                console.error("Could not find the <model-viewer> element!");
+            }
+        }
+
         // Render the scene
         (function animate() {
             requestAnimationFrame(animate);
