@@ -1,3 +1,6 @@
+# Pyright false positive due to dynamic PySide attributes
+# pyright: reportAttributeAccessIssue=false
+
 import os
 import sys
 import platform
@@ -33,7 +36,7 @@ print(
 
 def resource_path(relative_path):
     if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path) # type: ignore
+        return os.path.join(sys._MEIPASS, relative_path)
 
     return os.path.join(os.path.abspath("."), relative_path)
 
@@ -105,7 +108,7 @@ class MainWindow(QMainWindow):
     # TODO: Finish the load recent functionality
     def load_recent(self, item):
         print("A recent project from the list was clicked!")
-        print(f"Loading: {item.data(Qt.UserRole + 1)}") # Get the item's display name             # type: ignore
+        print(f"Loading: {item.data(Qt.UserRole + 1)}") # Get the item's display name
         print("Switching to Workspace...")
 
         # self.ui.stackedWidget.setCurrentIndex(1)
@@ -177,9 +180,9 @@ class MainWindow(QMainWindow):
 
         if not data:
             item = QListWidgetItem("No recent projects")
-            item.setFlags(Qt.NoItemFlags) # type: ignore
-            item.setTextAlignment(Qt.AlignCenter) # type: ignore
-            item.setForeground(Qt.gray) # type: ignore
+            item.setFlags(Qt.NoItemFlags)
+            item.setTextAlignment(Qt.AlignCenter)
+            item.setForeground(Qt.gray)
             item.setSizeHint(QSize(0, 40))
 
             self.ui.recentProjectsList.addItem(item)
@@ -218,8 +221,8 @@ class MainWindow(QMainWindow):
             widget.setLayout(layout)
 
             # Store file path and it's display name the item (IMPORTANT!)
-            list_item.setData(Qt.UserRole, item["filePath"]) # type: ignore
-            list_item.setData(Qt.UserRole + 1, name_label.text()) # Store the item's display name in custom data            # type: ignore
+            list_item.setData(Qt.UserRole, item["filePath"])
+            list_item.setData(Qt.UserRole + 1, name_label.text()) # Store the item's display name in custom data
 
             self.ui.recentProjectsList.addItem(list_item)
             self.ui.recentProjectsList.setItemWidget(list_item, widget)
@@ -230,7 +233,7 @@ QApplication.setOrganizationName("BoxCAD")
 QApplication.setApplicationName("BoxCAD")
 
 data_dir = QStandardPaths.writableLocation(
-    QStandardPaths.AppDataLocation # type: ignore
+    QStandardPaths.AppDataLocation
 )
 
 os.makedirs(data_dir, exist_ok=True)

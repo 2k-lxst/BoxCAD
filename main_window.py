@@ -1,8 +1,19 @@
+# Pyright false positive due to dynamic PySide attributes
+# pyright: reportAttributeAccessIssue=false
+
 import sys
 import os
 import cadquery as cq
-from PyQt6.QtWidgets import QApplication, QMainWindow, QToolBox, QHBoxLayout, QWidget, QSplitter
-from PyQt6.QtCore import Qt
+import PySide6 as PySide
+from PySide6 import QtWidgets, QtCore
+
+# Qt shortcut aliases
+QtWidgets = PySide.QtWidgets
+QtCore = PySide.QtCore
+
+# Common Qt classes
+QApplication = QtWidgets.QApplication
+QMainWindow  = QtWidgets.QMainWindow
 
 # Import UI class
 from ui.main_window_ui import Ui_MainWindow
@@ -10,6 +21,8 @@ from ui.main_window_ui import Ui_MainWindow
 # Import custom classes
 from build_ui import BuildUI
 from model_viewer import ModelViewer
+
+# TODO: Implement listeners for all values
 
 class BoxCAD(QMainWindow):
     def __init__(self):
@@ -33,9 +46,6 @@ class BoxCAD(QMainWindow):
         self.ui_builder.project_initialized = True
 
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
-
-        # TODO: self.rebuild geometry
-        # TODO: self.connecet ui signals
 
         self.connect_ui_signals()
         self.rebuild_geometry()
@@ -69,9 +79,10 @@ class BoxCAD(QMainWindow):
 
         print(colored(f"[{type.upper()}] {message}", color))
 
-# 5. THE ENGINE: This block makes the window actually appear
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+
     window = BoxCAD()
     window.show()
     sys.exit(app.exec())
