@@ -1,14 +1,3 @@
-"""
-FILE: build_ui.py
-
-EXAMPLE USAGE:
-To add a standard input row inside a build function:
-    spin_box = QDoubleSpinBox()
-    spin_box.setRange(0, 500)
-    spin_box.setSuffix(" mm")
-    layout.addRow("Label Name:", spin_box)
-"""
-
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
