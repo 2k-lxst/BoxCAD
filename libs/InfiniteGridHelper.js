@@ -1,5 +1,5 @@
 // Author: Fyrestar https://mevedia.com (https://github.com/Fyrestar/THREE.InfiniteGridHelper)
-// Modified by: 2klxst (Filip Kolenc)
+// Modified by: 2klxst
 
 import * as THREE from 'three';
 
@@ -53,5 +53,11 @@ export class InfiniteGridHelper extends THREE.Mesh {
 
         super(geometry, material);
         this.frustumCulled = false;
+    }
+
+    setColor(color) {
+        const newColor = (color instanceof THREE.Color) ? color: new THREE.Color(color);
+
+        this.material.uniforms.uColor.value.copy(newColor);
     }
 }

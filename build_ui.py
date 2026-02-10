@@ -48,16 +48,25 @@ class BuildUI:
 
         explainer = QLabel(
             "<h1><b>Welcome to BoxCAD!</b></h1><hr>"
-            "BoxCAD is a high-fidelity parametric engine designed to bridge the critical gap between internal electronic component architectures and their external physical protection, utilizing logic-driven geometry to automate the path from circuit design to precision-engineered chassis."
-            "<h3>To begin your design:</h3>"
-            "<ul>"
-                "<li>Set your base dimensions</li>"
-                "<li>Click the button below to initialize the project</li>"
-            "</ul>"
+            "BoxCAD is a high-fidelity parametric engine designed to bridge the critical gap between internal electronic component architectures and their external physical protection, utilizing logic-driven geometry to automate the path from circuit design to precision-engineered chassis.<hr>"
+            "To begin your design, click the button below!<br><br>"
             "<i>This will unlock all editing tools</i>"
         )
 
+        footer = QLabel(
+            "<div style='width:100%; text-align: center;'>"
+                "<span style='font-size: 10px; font-weight: bold; color: #737373;'>"
+                "HACK CLUB <span style='color: #ec3750;'>X</span> FLAVORTOWN</span><br>"
+                "<span style='color: #9c9c9c;'>Made with <span style='color: #ec3750;'>❤️</span> in Slovenia</span>"
+            "</div>"
+        )
+
         # Style and configure the explainer text
+        explainer.setStyleSheet("color: #777777; font-size: 13px;")
+        explainer.setWordWrap(True)
+        explainer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Style and configure the footer text
         explainer.setStyleSheet("color: #777777; font-size: 13px;")
         explainer.setWordWrap(True)
         explainer.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -67,9 +76,10 @@ class BuildUI:
         self.initialize_btn.setMinimumHeight(40)
 
         # Add to layout
-        layout.addWidget(explainer)
-        layout.addWidget(self.initialize_btn)
-        layout.addStretch()
+        layout.addWidget(explainer)             # Welcome text
+        layout.addWidget(self.initialize_btn)   # The button
+        layout.addStretch(1)                    # Pushes everything below it to the bottom
+        layout.addWidget(footer)            # Footer
 
         return page
 
