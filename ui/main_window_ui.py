@@ -20,11 +20,13 @@ from PySide6.QtWidgets import (QApplication, QDockWidget, QFormLayout, QFrame,
     QMainWindow, QMenu, QMenuBar, QSizePolicy,
     QStatusBar, QToolBox, QVBoxLayout, QWidget)
 
+from model_viewer import ModelViewer
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(800, 700)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -36,7 +38,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setSizePolicy(sizePolicy)
         self.verticalLayout = QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.viewer = QFrame(self.centralwidget)
+        self.viewer = ModelViewer(self.centralwidget)
         self.viewer.setObjectName(u"viewer")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy1.setHorizontalStretch(0)

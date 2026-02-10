@@ -5,11 +5,11 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-composit
 os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
 import threading, socketserver, http.server
-
 from qtpy.QtWidgets import QWidget, QVBoxLayout
 from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
 from qtpy.QtCore import QUrl
 from http.server import SimpleHTTPRequestHandler
+import cadquery as cq
 
 class QuietHandler(SimpleHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
@@ -65,6 +65,24 @@ class ModelViewer(QWidget):
         self.httpd.shutdown()
 
         super().closeEvent(event)
+
+    def update_display(self, cq_object):
+        """Exports geometry and notifies the browser to reload the file via HTTP"""
+        try:
+            self.base_dir = os.path.dirname(os.path.abspath(__file__))
+            stl_path = os.path.join(self.base_dir, "model.stl")
+
+            cq_object.export(stl_path)
+
+            import time
+            t = int(time.time() * 1000) # Current time in miliseconds
+
+            relative_url = f"./model.stl?t={t}"
+
+            self.browser.page().runJavaScript(f"updateMesh('{relative_url}')")
+
+        except Exception as e:
+            self.print_to_console(str(e), "error")
 
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored

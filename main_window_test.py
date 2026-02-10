@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QDoubleSpi
 # Import compiled UI class and Resources
 from ui.main_window_ui import Ui_MainWindow
 
-from modelViewer import ModelViewer
+from model_viewer import ModelViewer
 from build_ui import BuildUI
 
 class TestWindow(QMainWindow):
