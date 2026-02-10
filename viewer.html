@@ -97,17 +97,27 @@
             right: 15px;
             font-family: "Segoe UI", sans-serif;
             z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
 
         #menu-button {
             display: none;
+            font-size: 22px;
+            line-height: 1;
             background: rgba(50, 50, 50, 0.8);
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 7px 14px;
             border-radius: 5px;
             cursor: pointer;
             backdrop-filter: blur(5px);
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        #menu-button:active {
+            transform: scale(0.95);
         }
 
         #settings-menu {
@@ -118,9 +128,22 @@
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             width: 200px;
+            transform-origin: top right;
+            transition:
+                opacity 0.17s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.17s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0.17s;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            visibility: visible;
         }
 
-        .hidden { display: none; }
+        #settings-menu.hidden {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px) scale(0.8);
+            pointer-events: none;
+        }
 
         .control-row {
             display: flex;
@@ -182,7 +205,7 @@
     </div>
 
     <div id="ui-container">
-        <button id="menu-button">⚙️ Settings</button>
+        <button id="menu-button">≡</button>
 
         <div id="settings-menu" class="hidden">
             <h3>Viewer Options</h3>
