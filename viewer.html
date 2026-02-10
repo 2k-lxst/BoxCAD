@@ -103,21 +103,41 @@
         }
 
         #menu-button {
-            display: none;
+            display: flex;
+            opacity: 0;
+            pointer-events: none;
             font-size: 22px;
             line-height: 1;
             background: rgba(50, 50, 50, 0.8);
+            transform-origin: center;
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
             color: white;
             border: none;
             padding: 7px 14px;
             border-radius: 5px;
             cursor: pointer;
+            align-items: center;
+            justify-content: center;
             backdrop-filter: blur(5px);
-            transition: background 0.2s, transform 0.2s;
+            transition: background 0.3s ease,
+                font-size 0.2s ease,
+                transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.5s ease;
+        }
+
+        #menu-button.is-open {
+            background-color: #ec3750;
+        }
+
+        #menu-button.is-ready {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #menu-button:active {
-            transform: scale(0.95);
+            transform: scale(0.9);
         }
 
         #settings-menu {
@@ -255,18 +275,23 @@
     <script type="module">
         let firstFrameRendered = false;
 
-        import * as THREE from "three"
-        import { STLLoader } from "three/addons/loaders/STLLoader.js"
+        import * as THREE from "three";
+        import { STLLoader } from "three/addons/loaders/STLLoader.js";
         import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-        import { OrbitControls } from "three/addons/controls/OrbitControls.js"
-        import { ViewHelper } from "three/addons/helpers/ViewHelper.js"
+        import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+        import { ViewHelper } from "three/addons/helpers/ViewHelper.js";
         import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
 
         // Toggle Menu Visibility
         const menuButton = document.getElementById('menu-button');
         const menu = document.getElementById('settings-menu');
 
-        menuButton.onclick = () => menu.classList.toggle('hidden');
+        menuButton.onclick = () => {
+            const isHidden = menu.classList.toggle('hidden');
+
+            menuButton.classList.toggle("is-open", !isHidden);
+            menuButton.textContent = isHidden ? '≡' : '×';
+        };
 
         // Reset camera
         document.getElementById('reset-cam').onclick = () => {
@@ -576,7 +601,7 @@
             setTimeout(() => {
                 loader.style.opacity = "0";
 
-                document.getElementById("menu-button").style = "display: block;";
+                document.getElementById("menu-button").classList.add("is-ready");
 
                 setTimeout(() => {
                     loader.style.display = 'none';
