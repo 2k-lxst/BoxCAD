@@ -1,3 +1,6 @@
+# Pyright false positive due to dynamic PySide attributes
+# pyright: reportAttributeAccessIssue=false
+
 import os
 
 # Silence Chromium hardware errors
@@ -5,7 +8,7 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-composit
 os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
 import threading, socketserver, http.server
-from qtpy.QtWidgets import QWidget, QVBoxLayout
+from qtpy.QtWidgets import QFrame, QVBoxLayout
 from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
 from qtpy.QtCore import QUrl
 from http.server import SimpleHTTPRequestHandler
@@ -17,33 +20,34 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
         if "favicon.ico" in self.path:
             if hasattr(self.server, 'printer'):
-                self.server.printer(f"File not found - GET {self.path} HTTP/1.1", "silenced") # type: ignore
+                self.server.printer(f"File not found - GET {self.path} HTTP/1.1", "silenced")
             return
 
         if hasattr(self.server, "printer"):
-            self.server.printer(f"Code {code}: {message or explain} - {self.path}", "error") # type: ignore
+            self.server.printer(f"Code {code}: {message or explain} - {self.path}", "error")
 
     def log_message(self, format, *args):
         message = format % args
 
         if hasattr(self.server, "printer"):
             if "404" in message:
-                self.server.printer(f"Asset Missing: {message}", "error") # type: ignore
+                self.server.printer(f"Asset Missing: {message}", "error")
             else:
-                self.server.printer(f"Served: {message}", "success") # type: ignore
+                self.server.printer(f"Served: {message}", "success")
 
                 pass
         else:
             print(message)
 
-class ModelViewer(QWidget):
+class ModelViewer(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         # Layout and browser
-        self.layout = QVBoxLayout(self) # type: ignore
         self.browser = QWebEngineView()
-        self.layout.addWidget(self.browser) # type: ignore
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self.browser)
 
         # Serve the current folder via HTTP on a free port
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +55,7 @@ class ModelViewer(QWidget):
 
         self.httpd = socketserver.TCPServer(("", 0), QuietHandler) # 0 = Pick a free port
 
-        self.httpd.printer = self.print_to_console # type: ignore
+        self.httpd.printer = self.print_to_console
 
         port = self.httpd.server_address[1]
 

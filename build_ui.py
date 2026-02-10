@@ -1,3 +1,6 @@
+# Pyright false positive due to dynamic PySide attributes
+# pyright: reportAttributeAccessIssue=false
+
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
@@ -22,7 +25,7 @@ class BuildUI:
         layout.setContentsMargins(12, 10, 12, 12)
         layout.setHorizontalSpacing(7)
         layout.setVerticalSpacing(10)
-        layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow) # type: ignore
+        layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
 
         return page, layout
 
@@ -178,7 +181,7 @@ class BuildUI:
         )
 
         mono_font = QFont("Consolas", 10)
-        mono_font.setStyleHint(QFont.Monospace) # Fallback to any monospace if Consolas is missing # type: ignore
+        mono_font.setStyleHint(QFont.Monospace) # Fallback to any monospace if Consolas is missing
 
         self.pcb_coordinates_input.setFont(mono_font)
 
@@ -247,7 +250,7 @@ class BuildUI:
 
         self.manager_container = QWidget()
         self.manager_layout = QVBoxLayout(self.manager_container)
-        self.manager_layout.setAlignment(Qt.AlignTop) # Keeps items at the top # type: ignore
+        self.manager_layout.setAlignment(Qt.AlignTop) # Keeps items at the top
         self.scroll_area.setWidget(self.manager_container)
 
         self.manager_layout.addWidget(self.no_cutouts_label)
@@ -260,7 +263,7 @@ class BuildUI:
 
     def add_vertical_spacer(self, layout):
         """Helper to push widgets to the top of the form."""
-        spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding) # type: ignore
+        spacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         layout.addItem(spacer)
 
@@ -289,6 +292,15 @@ class BuildUI:
             self.print_to_console("Welcome page was built successfully!", "success")
         else:
             toolbox.setMinimumWidth(0)
+
+            # Get the widget at index 0 (Getting Started category)
+            old_widget = toolbox.widget(0)
+
+            toolbox.removeItem(0) # Remove the Getting Started category from view
+
+            # Delete from memory
+            if old_widget:
+                old_widget.deleteLater()
 
             toolbox.addItem(self.build_dimensions_page(), "Dimensions")
             toolbox.addItem(self.build_assembly_page(), "Lid && Joinery")
