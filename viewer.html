@@ -6,6 +6,7 @@
     <title>BoxCAD Local STL Viewer</title>
 
     <style>
+        /* Loader */
         body {
             margin: 0;
             padding: 0;
@@ -89,6 +90,65 @@
             animation: pulse 1.5s infinite ease-in-out;
         }
 
+        /* Settings menu */
+        #ui-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-family: "Segoe UI", sans-serif;
+            z-index: 100;
+        }
+
+        #menu-button {
+            display: none;
+            background: rgba(50, 50, 50, 0.8);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+
+        #settings-menu {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 200px;
+        }
+
+        .hidden { display: none; }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        #reset-cam {
+            width: 100%;
+            margin-top: 5px;
+            cursor: pointer;
+            background: #ec3750;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        /* Animations */
         @keyframes rotate {
             0% { transform: rotate(0deg); border-color: #007acc; }
             50% { transform: rotate(180deg); border-color: #4fc3f7; transform: scale(1.2); }
@@ -121,6 +181,43 @@
         </div>
     </div>
 
+    <div id="ui-container">
+        <button id="menu-button">⚙️ Settings</button>
+
+        <div id="settings-menu" class="hidden">
+            <h3>Viewer Options</h3>
+
+            <div class="control-row">
+                <label>Theme</label>
+
+                <select id="theme-select">
+                    <option value="0x1a1a1a">Dark</option>
+                    <option value="0xd9d9d9">Light</option>
+                </select>
+            </div>
+
+            <div class="control-row">
+                <label>Show Grid</label>
+
+                <input type="checkbox" id="grid-toggle" checked>
+            </div>
+
+            <div class="control-row">
+                <label>Orientation Helper Cube</label>
+
+                <input type="checkbox" id="helper-toggle" checked>
+            </div>
+
+            <div class="control-row">
+                <label>Show Dimensions</label>
+
+                <input type="checkbox" id="dimensions-toggle" checked>
+            </div>
+
+            <button id="reset-cam">Reset Camera</button>
+        </div>
+    </div>
+
     <!-- Use the import map to import Three.js -->
     <script type="importmap">
         {
@@ -142,6 +239,17 @@
         import { ViewHelper } from "three/addons/helpers/ViewHelper.js"
         import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
 
+        // Toggle Menu Visibility
+        const menuButton = document.getElementById('menu-button');
+        const menu = document.getElementById('settings-menu');
+
+        menuButton.onclick = () => menu.classList.toggle('hidden');
+
+        // Reset camera
+        document.getElementById('reset-cam').onclick = () => {
+            controls.reset();
+        };
+
         // Setup the CSS2D renderer
         const labelRenderer = new CSS2DRenderer();
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -153,6 +261,7 @@
 
         function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff00ee) {
             const group = new THREE.Group();
+            group.name = "measurementLabels";
 
             // Calculate points with the offset
             const pStart = start.clone().add(offsetVector);
@@ -307,17 +416,17 @@
         // Initialize ViewHelper
         const viewHelper = new ViewHelper(camera, renderer.domElement);
 
-        // Create a clickable overlay for the Gizmo
-        const helperContainer = document.createElement('div');
-        helperContainer.style.position = 'absolute';
-        helperContainer.style.right = '0';
-        helperContainer.style.top = '0'; // Positioned at top right
-        helperContainer.style.width = '128px';
-        helperContainer.style.height = '128px';
-        helperContainer.style.cursor = 'pointer';
-        helperContainer.style.zIndex = '100';
+        document.getElementById('helper-toggle').onchange = (e) => {
+            viewHelper.visible = e.target.checked;
+        };
 
-        document.body.appendChild(helperContainer);
+        document.getElementById('dimensions-toggle').onchange = (e) => {
+            scene.traverse((object) => {
+                if (object.name === "measurementLabels") {
+                    object.visible = e.target.checked;
+                }
+            });
+        };
 
         // Add and configure a new ambient light
         scene.add(new THREE.AmbientLight(0xffffff, 0.5))
@@ -371,6 +480,23 @@
             // size2 = 1  (A minor line every 1mm)
             const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 100);
 
+            document.getElementById("grid-toggle").onchange = (e) => {
+                grid.visible = e.target.checked;
+            }
+
+            // Theme (background color)
+            document.getElementById('theme-select').onchange = (e) => {
+                const selectedColor = parseInt(e.target.value);
+
+                scene.background = new THREE.Color(selectedColor);
+
+                if (selectedColor > 0x888888) {
+                    grid.setColor(0x333333);
+                } else {
+                    grid.setColor(0xffffff);
+                }
+            };
+
             scene.add(grid);
 
             const gap = 0.5; // Distance away from farthest dimension
@@ -407,6 +533,8 @@
             camera.position.set(3, 3, 3);
             controls.update();
 
+            controls.saveState();
+
             hideLoader();
         }, undefined, e => console.error(e))
 
@@ -424,6 +552,8 @@
 
             setTimeout(() => {
                 loader.style.opacity = "0";
+
+                document.getElementById("menu-button").style = "display: block;";
 
                 setTimeout(() => {
                     loader.style.display = 'none';
