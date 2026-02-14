@@ -191,6 +191,18 @@
             border-radius: 4px;
         }
 
+        /* Measurement label */
+        .measurement-label {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: sans-serif;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
         /* Animations */
         @keyframes rotate {
             0% { transform: rotate(0deg); border-color: #007acc; }
@@ -257,6 +269,17 @@
                 <input type="checkbox" id="dimensions-toggle" checked>
             </div>
 
+            <!-- Might be added back later -->
+
+            <!-- <div class="control-row">
+                <label>Scale Mode</label>
+
+                <select id="scale-mode">
+                    <option value="fit">Auto-Fit</option>
+                    <option value="true">True Scale (1:)</option>
+                </select>
+            </div> -->
+
             <button id="reset-cam">Reset Camera</button>
         </div>
     </div>
@@ -273,14 +296,31 @@
     </script>
 
     <script type="module">
-        let firstFrameRendered = false;
-
         import * as THREE from "three";
         import { STLLoader } from "three/addons/loaders/STLLoader.js";
         import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
         import { OrbitControls } from "three/addons/controls/OrbitControls.js";
         import { ViewHelper } from "three/addons/helpers/ViewHelper.js";
         import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
+
+        let firstFrameRendered = false;
+        let scene, camera, renderer, currentMesh;
+        let scaleMode = "fit";
+
+        const loader = new STLLoader();
+
+        window.scene = scene;
+        window.loader = loader;
+
+        // Might be added back later
+
+        // document.getElementById("scale-mode").onchange = (e) => {
+        //     scaleMode = e.target.value;
+
+        //     if (currentMesh) {
+        //         applyScaling(currentMesh);
+        //     }
+        // }
 
         // Toggle Menu Visibility
         const menuButton = document.getElementById('menu-button');
@@ -307,7 +347,37 @@
 
         document.body.appendChild(labelRenderer.domElement);
 
-        function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff00ee) {
+        // Might be added back later
+
+        // function applyScaling(mesh) {
+        //     const geometry = mesh.geometry;
+
+        //     if (!geometry.boundingBox) geometry.computeBoundingBox();
+
+        //     const size = new THREE.Vector3();
+        //     geometry.boundingBox.getSize(size);
+
+        //     if (scaleMode === "fit") {
+        //         const maxDimensions = Math.max(size.x, size.y, size.z);
+        //         const scaleFactor = 2 / maxDimensions;
+
+        //         currentMesh.scale.setScalar(scaleFactor);
+        //         currentMesh.position.y = (size.y * scaleFactor) / 2;
+        //     } else {
+        //         currentMesh.scale.setScalar(1);
+        //         currentMesh.position.y = size.y / 2;
+
+        //         const distance = Math.max(size.x, size.y, size.z) * 1.5;
+
+        //         camera.position.set(distance, distance, distance)
+
+        //         controls.update();
+        //     }
+
+        //     updateMeasurements(mesh, size);
+        // }
+
+        function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff00ee, globalMax = 10) {
             const group = new THREE.Group();
             group.name = "measurementLabels";
 
@@ -318,11 +388,14 @@
             const distance = pStart.distanceTo(pEnd);
             const dir = new THREE.Vector3().subVectors(pEnd, pStart).normalize();
 
-            const coneHeight = 0.5; // Must match ConeGeometry height
+            const scaleFactor = globalMax * 0.05;
+
+            const coneHeight = scaleFactor;
 
             // Create the main line (thin cylinder)
             const lineLength = Math.max(0, distance - coneHeight);
-            const lineGeo = new THREE.CylinderGeometry(0.03, 0.03, lineLength, 8);
+            const lineThickness = scaleFactor * 0.06;
+            const lineGeo = new THREE.CylinderGeometry(lineThickness, lineThickness, lineLength, 8);
             const lineMat = new THREE.MeshStandardMaterial({ color: hexColor });
             const lineMesh = new THREE.Mesh(lineGeo, lineMat);
 
@@ -333,7 +406,8 @@
             group.add(lineMesh);
 
             // Create a smooth Cone Geometry
-            const coneGeo = new THREE.ConeGeometry(0.15, 0.5, 32);
+            const coneRadius = scaleFactor * 0.3;
+            const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 32);
             const coneMat = new THREE.MeshStandardMaterial({ color: hexColor });
 
             // First Cone (at pStart)
@@ -379,7 +453,7 @@
             ctx.stroke();
 
             ctx.fillStyle = 'white';
-            ctx.font = 'bold 80px monospace';
+            ctx.font = '80px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -426,7 +500,8 @@
             labelPos.add(offsetDir.multiplyScalar(0.3));
 
             // Add a small extra Y bump to move the label strictly above the floor
-            labelPos.y += 0.1;
+            labelPos.add(offsetDir.multiplyScalar(scaleFactor * 0.8));
+            labelPos.y += scaleFactor * 0.2;
 
             label.position.copy(labelPos);
 
@@ -434,7 +509,7 @@
             const aspectRatio = canvas.width / canvas.height;
 
             // Set the Y scale (height) first, then multiply by aspect ration for X (width)
-            const baseHeight = 0.4;
+            const baseHeight = scaleFactor * 1.5;
 
             label.scale.set(baseHeight * aspectRatio, baseHeight, 1);
 
@@ -443,15 +518,98 @@
             scene.add(group);
         }
 
+        function updateMeasurements(mesh, rawSize) {
+            // Remove all existing measurement groups
+            const toRemove = [];
+
+            scene.traverse((child) => {
+                if (child.name === "measurementLabels") {
+                    toRemove.push(child);
+                }
+            });
+
+            toRemove.forEach(child => scene.remove(child));
+
+            // Get the actual visual box (after scaling)
+            const visualBox = new THREE.Box3().setFromObject(mesh);
+            const gap = 0.5;
+
+            const size = new THREE.Vector3();
+
+            mesh.geometry.boundingBox.getSize(size);
+
+            const globalMax = Math.max(size.x, size.y, size.z);
+
+            // Re-create the 3 main dimensions
+            // Width (X)
+            createMeasurement(
+                new THREE.Vector3(visualBox.min.x, visualBox.min.y, visualBox.max.z),
+                new THREE.Vector3(visualBox.max.x, visualBox.min.y, visualBox.max.z),
+                `${Math.round(rawSize.x)}mm`,
+                new THREE.Vector3(0, 0, gap),
+                0xff0000,
+                globalMax
+            );
+
+            // Height (Y)
+            createMeasurement(
+                new THREE.Vector3(visualBox.max.x, visualBox.min.y, visualBox.min.z),
+                new THREE.Vector3(visualBox.max.x, visualBox.max.y, visualBox.min.z),
+                `${Math.round(rawSize.y)}mm`,
+                new THREE.Vector3(gap, 0, -gap),
+                0x00ff00,
+                globalMax
+            );
+
+            // Length (Z)
+            createMeasurement(
+                new THREE.Vector3(visualBox.max.x, visualBox.min.y, visualBox.min.z),
+                new THREE.Vector3(visualBox.max.x, visualBox.min.y, visualBox.max.z),
+                `${Math.round(rawSize.z)}mm`,
+                new THREE.Vector3(gap, 0, 0),
+                0x0000ff,
+                globalMax
+            );
+        }
+
+        function fitCameraToObject(mesh) {
+            const box = new THREE.Box3().setFromObject(mesh);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDimensions = Math.max(size.x, size.y, size.z);
+
+            // Calculate distance based on FOV (Field of View)
+            const fov = camera.fov * (Math.PI / 180);
+
+            let distance = Math.abs(maxDimensions / 2 / Math.tan(fov / 2));
+
+            distance *= 1.5; // Add padding
+
+            // camera.position.set(center.x + distance, center.y + distance, center.z + distance);
+
+            const target = new THREE.Vector3();
+
+            target.x = center.x + distance;
+            target.y = center.y + distance;
+            target.z = center.z + distance;
+
+            camera.position.lerp(target, 0.05);
+
+            // Point the camera and the controls at the center of the model
+            controls.target.copy(center);
+            camera.lookAt(center);
+            controls.update();
+        }
+
         // Create a new Three.js scene and set it's background color to a dark gray
-        const scene = new THREE.Scene();
+        scene = new THREE.Scene();
         scene.background = new THREE.Color(0x202020);
 
-        // Create the camera and set it's position to 3, 3, 3
-        const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+        // Create the camera
+        camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
 
         // Create a new renderer, set it's size to the innerWidth and innerHeight and append it to the document
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(innerWidth, innerHeight);
         document.body.appendChild(renderer.domElement);
 
@@ -496,8 +654,8 @@
 
         scene.add(dirLight);
 
-        new STLLoader().load("./model.stl", geo => {
-        // Load and compute the model.stl file
+        loader.load("./model.stl", geo => {
+            // Load and compute the model.stl file
             geo.center()
 
             geo.computeBoundingBox();
@@ -510,16 +668,19 @@
 
             const size = new THREE.Vector3();
             geo.boundingBox.getSize(size);
-            const maxDimensions = Math.max(size.x, size.y, size.z);
-            mesh.scale.setScalar(2 / maxDimensions);
+            const maxDimensionsensions = Math.max(size.x, size.y, size.z);
+            mesh.scale.setScalar(1);
+            mesh.position.y = size.y / 2;
 
             // Shift the mesh up by half its scaled height
-            // This makes the bottom (min.y) sit exactly at 0 on the gridd.
-            const scaledHeight = (size.y * (2 / maxDimensions));
+            // This makes the bottom (min.y) sit exactly at 0 on the grid.
+            const scaledHeight = (size.y * (2 / maxDimensionsensions));
 
             mesh.position.y = scaledHeight / 2;
 
             scene.add(mesh);
+
+            currentMesh = mesh;
 
             // Calculate bounds
             const box = new THREE.Box3().setFromObject(mesh);
@@ -547,38 +708,13 @@
 
             scene.add(grid);
 
-            const gap = 0.5; // Distance away from farthest dimension
+            const gap = 0.5; // Distance away from farthest edge
 
-            // Width Measurement (X) - red
-            createMeasurement(
-                new THREE.Vector3(box.min.x, box.min.y, box.max.z),
-                new THREE.Vector3(box.max.x, box.min.y, box.max.z),
-                `${Math.round(size.x)}mm`,
-                new THREE.Vector3(0, 0, gap),
-                0xff0000
-            );
-
-            // Height Measurement (Y) - green
-            createMeasurement(
-                new THREE.Vector3(box.max.x, box.min.y, box.min.z),
-                new THREE.Vector3(box.max.x, box.max.y, box.min.z),
-                `${Math.round(size.y)}mm`,
-                new THREE.Vector3(gap, 0, -gap),
-                0x00ff00
-            );
-
-            // Length Measurement (Z) - blue
-            createMeasurement(
-                new THREE.Vector3(box.max.x, box.min.y, box.min.z),
-                new THREE.Vector3(box.max.x, box.min.y, box.max.z),
-                `${Math.round(size.z)}mm`,
-                new THREE.Vector3(gap, 0, 0),
-                0x0000ff
-            );
+            updateMeasurements(currentMesh, size);
 
             // Camera positioned relative to model size
-            const scaleFactor = 2 / maxDimensions;
-            camera.position.set(3, 3, 3);
+            const scaleFactor = 2 / maxDimensionsensions;
+
             controls.update();
 
             controls.saveState();
@@ -609,17 +745,57 @@
             }, 300); // Artificial delay
         }
 
-        function updateMesh(newUrl) {
-            const viewer = document.getElementById("viewer");
+        window.updateMesh = function(url) {
+            loader.load(url, function (geometry) {
+                // Remove old mesh
+                if (currentMesh) {
+                    scene.remove(currentMesh);
 
-            if (viewer) {
-                viewer.src = newUrl;
+                    // Remove from memory
+                    currentMesh.geometry.dispose();
+                    currentMesh.material.dispose();
+                }
 
-                console.log("Model refreshed via: " + newUrl);
-            } else {
-                console.error("Could not find the <model-viewer> element!");
-            }
-        }
+                const toRemove = [];
+
+                scene.traverse((child) => {
+                    if (child.name === "measurementLabels") toRemove.push(child);
+                })
+
+                toRemove.forEach(child => scene.remove(child));
+
+                // Setup new geometry
+                geometry.center();
+                geometry.computeBoundingBox();
+
+                const size = new THREE.Vector3();
+                geometry.boundingBox.getSize(size);
+
+                const maxDimensions = Math.max(size.x, size.y, size.z);
+
+                const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+
+                currentMesh = new THREE.Mesh(geometry, material);
+
+                scene.add(currentMesh);
+
+                fitCameraToObject(currentMesh);
+
+                const newBox = new THREE.Box3().setFromObject(currentMesh);
+                const sphere = newBox.getBoundingSphere(new THREE.Sphere());
+                const gap = 0.5;
+
+                const distance = sphere.radius / Math.tan(Math.PI * camera.fov / 360);
+                camera.position.set(sphere.center.x + distance, sphere.center.y + distance, sphere.center.z + distance,)
+                controls.target.copy(sphere.center);
+                controls.update();
+
+                // Re-create the measurements with the new size
+                updateMeasurements(currentMesh, size);
+            }, undefined, function(err) {
+                console.error("[ERROR]: ", err);
+            });
+        };
 
         // Render the scene
         (function animate() {
@@ -629,7 +805,7 @@
 
             renderer.clear();
 
-            // 2. Render main scene (Full Window)
+            // Render main scene (full window)
             renderer.render(scene, camera);
 
             labelRenderer.render(scene, camera);

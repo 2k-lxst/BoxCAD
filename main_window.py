@@ -58,6 +58,8 @@ class BoxCAD(QMainWindow):
         self.ui_builder.widgets["height"].valueChanged.connect(self.rebuild_geometry)
 
     def rebuild_geometry(self):
+
+
         try:
             l = self.ui_builder.widgets["length"].value()
             w = self.ui_builder.widgets["width"].value()

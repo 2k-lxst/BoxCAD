@@ -71,7 +71,7 @@ class BuildUI:
         layout.addWidget(explainer)             # Welcome text
         layout.addWidget(self.initialize_btn)   # The button
         layout.addStretch(1)                    # Pushes everything below it to the bottom
-        layout.addWidget(footer)            # Footer
+        layout.addWidget(footer)                # Footer
 
         return page
 
