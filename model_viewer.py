@@ -57,12 +57,12 @@ class ModelViewer(QFrame):
 
         self.httpd.printer = self.print_to_console
 
-        port = self.httpd.server_address[1]
+        self.port = self.httpd.server_address[1]
 
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
         # Load the HTML file through the server
-        self.browser.setUrl(QUrl(f"http://127.0.0.1:{port}/viewer.html"))
+        self.browser.setUrl(QUrl(f"http://127.0.0.1:{self.port}/viewer.html"))
 
     def closeEvent(self, event):
         """Stop the server when the widget is closed"""
@@ -81,9 +81,12 @@ class ModelViewer(QFrame):
             import time
             t = int(time.time() * 1000) # Current time in miliseconds
 
-            relative_url = f"./model.stl?t={t}"
+            url = f"http://127.0.0.1:{self.port}/model.stl?t={t}"
 
-            self.browser.page().runJavaScript(f"updateMesh('{relative_url}')")
+            self.browser.page().runJavaScript(f"window.updateMesh({repr(url)})")
+
+            # self.browser.page().setDevToolsPage()
+            self.browser.page().devToolsPage()
 
         except Exception as e:
             self.print_to_console(str(e), "error")
