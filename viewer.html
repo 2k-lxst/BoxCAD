@@ -100,12 +100,13 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            pointer-events: none;
         }
 
         #menu-button {
             display: flex;
             opacity: 0;
-            pointer-events: none;
+            pointer-events: auto;
             font-size: 22px;
             line-height: 1;
             background: rgba(50, 50, 50, 0.8);
@@ -156,6 +157,7 @@
             opacity: 1;
             transform: translateY(0) scale(1);
             visibility: visible;
+            pointer-events: auto;
         }
 
         #settings-menu.hidden {
@@ -192,7 +194,7 @@
         }
 
         /* Measurement label */
-        .measurement-label {
+        /* .measurement-label {
             background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 4px 8px;
@@ -201,7 +203,7 @@
             font-family: sans-serif;
             pointer-events: none;
             white-space: nowrap;
-        }
+        } */
 
         /* Animations */
         @keyframes rotate {
@@ -243,7 +245,7 @@
             <h3>Viewer Options</h3>
 
             <div class="control-row">
-                <label>Theme</label>
+                <label title="Use the dark/light theme">Theme</label>
 
                 <select id="theme-select">
                     <option value="0x1a1a1a">Dark</option>
@@ -252,33 +254,28 @@
             </div>
 
             <div class="control-row">
-                <label>Show Grid</label>
+                <label title="Show/hide the grid">Show Grid</label>
 
                 <input type="checkbox" id="grid-toggle" checked>
             </div>
 
             <div class="control-row">
-                <label>Orientation Helper Cube</label>
+                <label title="Show/hide the orientation cube in the bottom right corner">Orientation Helper Cube</label>
 
                 <input type="checkbox" id="helper-toggle" checked>
             </div>
 
             <div class="control-row">
-                <label>Show Dimensions</label>
+                <label title="automatically repositions camera when dimensions change">Show Dimensions</label>
 
                 <input type="checkbox" id="dimensions-toggle" checked>
             </div>
 
-            <!-- Might be added back later -->
+            <div class="control-row">
+                <label>Auto Fit View</label>
 
-            <!-- <div class="control-row">
-                <label>Scale Mode</label>
-
-                <select id="scale-mode">
-                    <option value="fit">Auto-Fit</option>
-                    <option value="true">True Scale (1:)</option>
-                </select>
-            </div> -->
+                <input type="checkbox" id="auto-fit-view-toggle" checked>
+            </div>
 
             <button id="reset-cam">Reset Camera</button>
         </div>
@@ -303,26 +300,21 @@
         import { ViewHelper } from "three/addons/helpers/ViewHelper.js";
         import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
 
+        // Initialize the pybridge
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            window.pybridge = channel.objects.pybridge;
+        });
+
         let firstFrameRendered = false;
+        let autoFitEnabled = true;
         let scene, camera, renderer, currentMesh;
-        let scaleMode = "fit";
 
         const loader = new STLLoader();
 
         window.scene = scene;
         window.loader = loader;
 
-        // Might be added back later
-
-        // document.getElementById("scale-mode").onchange = (e) => {
-        //     scaleMode = e.target.value;
-
-        //     if (currentMesh) {
-        //         applyScaling(currentMesh);
-        //     }
-        // }
-
-        // Toggle Menu Visibility
+        // Toggle menu visibility
         const menuButton = document.getElementById('menu-button');
         const menu = document.getElementById('settings-menu');
 
@@ -338,6 +330,11 @@
             controls.reset();
         };
 
+        // Auto-fit toggle
+        document.getElementById("auto-fit-view-toggle").onchange = (e) => {
+            autoFitEnabled = e.target.checked;
+        }
+
         // Setup the CSS2D renderer
         const labelRenderer = new CSS2DRenderer();
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -347,54 +344,29 @@
 
         document.body.appendChild(labelRenderer.domElement);
 
-        // Might be added back later
-
-        // function applyScaling(mesh) {
-        //     const geometry = mesh.geometry;
-
-        //     if (!geometry.boundingBox) geometry.computeBoundingBox();
-
-        //     const size = new THREE.Vector3();
-        //     geometry.boundingBox.getSize(size);
-
-        //     if (scaleMode === "fit") {
-        //         const maxDimensions = Math.max(size.x, size.y, size.z);
-        //         const scaleFactor = 2 / maxDimensions;
-
-        //         currentMesh.scale.setScalar(scaleFactor);
-        //         currentMesh.position.y = (size.y * scaleFactor) / 2;
-        //     } else {
-        //         currentMesh.scale.setScalar(1);
-        //         currentMesh.position.y = size.y / 2;
-
-        //         const distance = Math.max(size.x, size.y, size.z) * 1.5;
-
-        //         camera.position.set(distance, distance, distance)
-
-        //         controls.update();
-        //     }
-
-        //     updateMeasurements(mesh, size);
-        // }
-
         function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff00ee, globalMax = 10) {
             const group = new THREE.Group();
             group.name = "measurementLabels";
 
+            // Use a non-linear scaleFactor
+            const scaleFactor = 0.3 + Math.sqrt(globalMax) * 0.3;
+
+            const dir = new THREE.Vector3().subVectors(end, start).normalize();
+
+            // Calculate the total offset and add extra padding (dependent on the scaleFactor) to push it away from the farthest edge
+            const totalOffset = offsetVector.clone().add(offsetVector.clone().normalize().multiplyScalar(scaleFactor));
+
             // Calculate points with the offset
-            const pStart = start.clone().add(offsetVector);
-            const pEnd = end.clone().add(offsetVector);
+            const pStart = start.clone().add(totalOffset);
+            const pEnd = end.clone().add(totalOffset);
 
             const distance = pStart.distanceTo(pEnd);
-            const dir = new THREE.Vector3().subVectors(pEnd, pStart).normalize();
-
-            const scaleFactor = globalMax * 0.05;
 
             const coneHeight = scaleFactor;
 
             // Create the main line (thin cylinder)
             const lineLength = Math.max(0, distance - coneHeight);
-            const lineThickness = scaleFactor * 0.06;
+            const lineThickness = scaleFactor * 0.04;
             const lineGeo = new THREE.CylinderGeometry(lineThickness, lineThickness, lineLength, 8);
             const lineMat = new THREE.MeshStandardMaterial({ color: hexColor });
             const lineMesh = new THREE.Mesh(lineGeo, lineMat);
@@ -405,12 +377,12 @@
 
             group.add(lineMesh);
 
-            // Create a smooth Cone Geometry
+            // Create a smooth cone geometry
             const coneRadius = scaleFactor * 0.3;
             const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 32);
             const coneMat = new THREE.MeshStandardMaterial({ color: hexColor });
 
-            // First Cone (at pStart)
+            // First cone (at pStart)
             const arrow1 = new THREE.Mesh(coneGeo, coneMat);
             arrow1.position.copy(pStart);
 
@@ -436,7 +408,7 @@
             canvas.width = 384;
             canvas.height = 192;
 
-            // Background + Round Rect
+            // Background and round rectangle
             ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.strokeStyle = `#${new THREE.Color(hexColor).getHexString()}`;
             ctx.lineWidth = 8;
@@ -497,10 +469,11 @@
             }
 
             // Apply the 0.3 offset in the calculated direction
-            labelPos.add(offsetDir.multiplyScalar(0.3));
+            labelPos.add(offsetDir.multiplyScalar(scaleFactor));
 
             // Add a small extra Y bump to move the label strictly above the floor
-            labelPos.add(offsetDir.multiplyScalar(scaleFactor * 0.8));
+            // labelPos.add(offsetDir.multiplyScalar(scaleFactor * 0.8));
+            labelPos.add(offsetDir.multiplyScalar(scaleFactor));
             labelPos.y += scaleFactor * 0.2;
 
             label.position.copy(labelPos);
@@ -508,8 +481,8 @@
             // Calculate the aspect ratio of the canvas (256 / 128 = 2)
             const aspectRatio = canvas.width / canvas.height;
 
-            // Set the Y scale (height) first, then multiply by aspect ration for X (width)
-            const baseHeight = scaleFactor * 1.5;
+            // Set the Y scale (height) first, then multiply by aspect ratio for X (width)
+            const baseHeight = scaleFactor * 1.75;
 
             label.scale.set(baseHeight * aspectRatio, baseHeight, 1);
 
@@ -532,13 +505,12 @@
 
             // Get the actual visual box (after scaling)
             const visualBox = new THREE.Box3().setFromObject(mesh);
-            const gap = 0.5;
 
-            const size = new THREE.Vector3();
+            const scaledSize = new THREE.Vector3();
+            visualBox.getSize(scaledSize);
 
-            mesh.geometry.boundingBox.getSize(size);
-
-            const globalMax = Math.max(size.x, size.y, size.z);
+            const gap = scaledSize.y * 0.2;
+            const globalMax = Math.max(scaledSize.x, scaledSize.y, scaledSize.z);
 
             // Re-create the 3 main dimensions
             // Width (X)
@@ -572,41 +544,12 @@
             );
         }
 
-        function fitCameraToObject(mesh) {
-            const box = new THREE.Box3().setFromObject(mesh);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            const maxDimensions = Math.max(size.x, size.y, size.z);
-
-            // Calculate distance based on FOV (Field of View)
-            const fov = camera.fov * (Math.PI / 180);
-
-            let distance = Math.abs(maxDimensions / 2 / Math.tan(fov / 2));
-
-            distance *= 1.5; // Add padding
-
-            // camera.position.set(center.x + distance, center.y + distance, center.z + distance);
-
-            const target = new THREE.Vector3();
-
-            target.x = center.x + distance;
-            target.y = center.y + distance;
-            target.z = center.z + distance;
-
-            camera.position.lerp(target, 0.05);
-
-            // Point the camera and the controls at the center of the model
-            controls.target.copy(center);
-            camera.lookAt(center);
-            controls.update();
-        }
-
         // Create a new Three.js scene and set it's background color to a dark gray
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x202020);
 
         // Create the camera
-        camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
 
         // Create a new renderer, set it's size to the innerWidth and innerHeight and append it to the document
         renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -654,40 +597,34 @@
 
         scene.add(dirLight);
 
-        loader.load("./model.stl", geo => {
+        loader.load("./model.stl", geometry => {
             // Load and compute the model.stl file
-            geo.center()
-
-            geo.computeBoundingBox();
-
-            const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
-
-            const center = new THREE.Vector3();
-            geo.boundingBox.getCenter(center);
-            mesh.position.sub(center);
+            geometry.center();
+            geometry.computeBoundingBox();
 
             const size = new THREE.Vector3();
-            geo.boundingBox.getSize(size);
-            const maxDimensionsensions = Math.max(size.x, size.y, size.z);
-            mesh.scale.setScalar(1);
-            mesh.position.y = size.y / 2;
+            geometry.boundingBox.getSize(size);
 
-            // Shift the mesh up by half its scaled height
-            // This makes the bottom (min.y) sit exactly at 0 on the grid.
-            const scaledHeight = (size.y * (2 / maxDimensionsensions));
+            // Create mesh
+            const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
+            currentMesh = mesh;
 
-            mesh.position.y = scaledHeight / 2;
+            // Apply target scale before positioning
+            const maxDimensions = Math.max(size.x, size.y, size.z);
+
+            // Shift the geometry up so the bottom is the pivot
+            geometry.translate(size.x / 2, size.y / 2, size.z / 2);
+            mesh.position.set(0, 0, 0);
 
             scene.add(mesh);
-
-            currentMesh = mesh;
 
             // Calculate bounds
             const box = new THREE.Box3().setFromObject(mesh);
 
-            // size1 = 10 (A major line every 1cm)
+            // size1 = 10 (A major line every 10mm (1cm))
             // size2 = 1  (A minor line every 1mm)
-            const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 100);
+            const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 500);
+            grid.position.y = -0.001; // Tiny offset to prevent "Z-fighting" (flickering) with the model floor
 
             document.getElementById("grid-toggle").onchange = (e) => {
                 grid.visible = e.target.checked;
@@ -713,12 +650,11 @@
             updateMeasurements(currentMesh, size);
 
             // Camera positioned relative to model size
-            const scaleFactor = 2 / maxDimensionsensions;
+            const scaleFactor = 2 / maxDimensions;
 
             controls.update();
 
             controls.saveState();
-
             hideLoader();
         }, undefined, e => console.error(e))
 
@@ -736,6 +672,10 @@
 
             setTimeout(() => {
                 loader.style.opacity = "0";
+
+                if (window.pybridge) {
+                    window.pybridge.on_viewer_ready()
+                }
 
                 document.getElementById("menu-button").classList.add("is-ready");
 
@@ -771,29 +711,30 @@
                 const size = new THREE.Vector3();
                 geometry.boundingBox.getSize(size);
 
+                currentMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+
                 const maxDimensions = Math.max(size.x, size.y, size.z);
 
-                const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-
-                currentMesh = new THREE.Mesh(geometry, material);
+                geometry.translate(-size.x / 2, size.y / 2, -size.z / 2);
+                currentMesh.position.set(0, 0, 0);
 
                 scene.add(currentMesh);
 
-                fitCameraToObject(currentMesh);
-
                 const newBox = new THREE.Box3().setFromObject(currentMesh);
                 const sphere = newBox.getBoundingSphere(new THREE.Sphere());
-                const gap = 0.5;
 
-                const distance = sphere.radius / Math.tan(Math.PI * camera.fov / 360);
-                camera.position.set(sphere.center.x + distance, sphere.center.y + distance, sphere.center.z + distance,)
-                controls.target.copy(sphere.center);
+                if (autoFitEnabled) {
+                    const distance = sphere.radius / Math.tan(Math.PI * camera.fov / 360);
+                    camera.position.set(distance, distance, distance);
+                }
+
+                controls.target.set(0, size.y / 2, 0);
                 controls.update();
 
                 // Re-create the measurements with the new size
                 updateMeasurements(currentMesh, size);
             }, undefined, function(err) {
-                console.error("[ERROR]: ", err);
+                console.error("[viewer.html] Error: ", err);
             });
         };
 
@@ -807,7 +748,6 @@
 
             // Render main scene (full window)
             renderer.render(scene, camera);
-
             labelRenderer.render(scene, camera);
             viewHelper.render(renderer);
         })();

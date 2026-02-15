@@ -67,6 +67,10 @@ class BuildUI:
         self.initialize_btn = QPushButton("Initialize Project")
         self.initialize_btn.setMinimumHeight(40)
 
+        # Start disabled
+        self.initialize_btn.setEnabled(False)
+        self.initialize_btn.setToolTip("Please wait for the 3D engine to initialize...")
+
         # Add to layout
         layout.addWidget(explainer)             # Welcome text
         layout.addWidget(self.initialize_btn)   # The button
@@ -81,6 +85,7 @@ class BuildUI:
         # Length
         length_input = QDoubleSpinBox()
         length_input.setRange(1, 1000)
+        length_input.setValue(10)
         length_input.setSuffix(" mm")
 
         layout.addRow("Length (X):", length_input)
@@ -89,6 +94,7 @@ class BuildUI:
         # Width
         width_input = QDoubleSpinBox()
         width_input.setRange(1, 1000)
+        width_input.setValue(10)
         width_input.setSuffix(" mm")
 
         layout.addRow("Width (Y):", width_input)
@@ -97,14 +103,23 @@ class BuildUI:
         # Height
         height_input = QDoubleSpinBox()
         height_input.setRange(1, 1000)
+        height_input.setValue(10)
         height_input.setSuffix(" mm")
 
         layout.addRow("Height (Z):", height_input)
         self.widgets["height"] = height_input
 
+        # TODO: Dynamically update the wall thickness min/max
+
         # Wall Thickness
+        l = self.widgets["length"].value()
+        w = self.widgets["width"].value()
+        h = self.widgets["height"].value()
+
+        max_safe = (min(l, w, h) / 2) - 0.1
+
         wall_thickness_input = QDoubleSpinBox()
-        wall_thickness_input.setRange(1, 1000)
+        wall_thickness_input.setRange(0.5, max_safe)
         wall_thickness_input.setSuffix(" mm")
 
         layout.addRow("Wall Thickness:", wall_thickness_input)
@@ -289,7 +304,7 @@ class BuildUI:
 
             layout.addWidget(welcome_widget)
 
-            self.print_to_console("Welcome page was built successfully!", "success")
+            self.print_to_console("Welcome page built successfully!", "success")
         else:
             toolbox.setMinimumWidth(0)
 

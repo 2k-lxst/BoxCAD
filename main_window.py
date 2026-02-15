@@ -2,7 +2,6 @@
 # pyright: reportAttributeAccessIssue=false
 
 import sys
-import os
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets, QtCore
@@ -39,6 +38,15 @@ class BoxCAD(QMainWindow):
         self.viewer = self.ui.viewer
 
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
+
+        def unlock_ui():
+            # This reaches into the ui class and enables the specific button
+            self.ui.initialize_btn.setEnabled(True)
+            self.ui.initialize_btn.setToolTip("Click to begin your design")
+            self.ui.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
+
+        # 4. Tell the viewer to run that function when JS says it's ready
+        self.viewer.set_on_ready_callback(unlock_ui)
 
         self.ui_builder.initialize_btn.clicked.connect(self.init_project)
 
