@@ -1,9 +1,12 @@
 # Editor settings
+# The VS Code editor settings are different for each user
 .vscode/
 
 # Python cache
+# Standard Python cache - we don't need it
 __pycache__/
 ui/__pycache__/main_window_ui.cpython-313.pyc
 
 # Model file
+# The model file is dynamic so it makes no sense to include it in the GitHub repo
 model.stl
