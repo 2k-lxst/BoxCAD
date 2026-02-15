@@ -4,3 +4,6 @@
 # Python cache
 __pycache__/
 ui/__pycache__/main_window_ui.cpython-313.pyc
+
+# Model file
+model.stl
