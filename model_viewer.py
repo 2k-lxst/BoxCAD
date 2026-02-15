@@ -10,9 +10,10 @@ os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 import threading, socketserver, http.server
 from qtpy.QtWidgets import QFrame, QVBoxLayout
 from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
-from qtpy.QtCore import QUrl
+from qtpy.QtCore import QUrl, QObject
+from qtpy.QtWebChannel import QWebChannel
+from PySide6.QtCore import Slot
 from http.server import SimpleHTTPRequestHandler
-import cadquery as cq
 
 class QuietHandler(SimpleHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
@@ -39,6 +40,18 @@ class QuietHandler(SimpleHTTPRequestHandler):
         else:
             print(message)
 
+class Bridge(QObject):
+    """Small helper class to recieve signals from JavaScript"""
+    def __init__(self, viewer):
+        super().__init__()
+        self.viewer = viewer
+
+        @Slot()
+        def on_viewer_ready(self):
+            # This is the function JavaScript will call
+            if hasattr(self.viewer, 'on_ready_callback'):
+                self.viewer.on_ready_callback()
+
 class ModelViewer(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -48,6 +61,12 @@ class ModelViewer(QFrame):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.browser)
+
+        # Bridge setup
+        self.channel = QWebChannel()
+        self.bridge = Bridge(self)
+        self.channel.registerObject("pybridge", self.bridge)
+        self.browser.page().setWebChannel(self.channel)
 
         # Serve the current folder via HTTP on a free port
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -99,3 +118,7 @@ class ModelViewer(QFrame):
         color = colors.get(type, "white")
 
         print(colored(f"[{type.upper()}] {message}", color))
+
+    def set_on_ready_callback(self, callback_func):
+        """Pass a function here from your main app to run when JS is ready"""
+        self.on_ready_callback = callback_func
