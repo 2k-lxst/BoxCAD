@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BoxCAD Local STL Viewer</title>
+    <script type="text/javascript" src="qwebchannel.js"></script>
 
     <style>
         /* Loader */
@@ -673,9 +674,7 @@
             setTimeout(() => {
                 loader.style.opacity = "0";
 
-                if (window.pybridge) {
-                    window.pybridge.on_viewer_ready()
-                }
+                if (window.pybridge) window.pybridge.on_viewer_ready()
 
                 document.getElementById("menu-button").classList.add("is-ready");
 

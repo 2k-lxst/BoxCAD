@@ -10,7 +10,7 @@ os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 import threading, socketserver, http.server
 from qtpy.QtWidgets import QFrame, QVBoxLayout
 from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
-from qtpy.QtCore import QUrl, QObject
+from qtpy.QtCore import QUrl, QObject, QTimer
 from qtpy.QtWebChannel import QWebChannel
 from PySide6.QtCore import Slot
 from http.server import SimpleHTTPRequestHandler
@@ -46,11 +46,11 @@ class Bridge(QObject):
         super().__init__()
         self.viewer = viewer
 
-        @Slot()
-        def on_viewer_ready(self):
-            # This is the function JavaScript will call
-            if hasattr(self.viewer, 'on_ready_callback'):
-                self.viewer.on_ready_callback()
+    @Slot()
+    def on_viewer_ready(self):
+        # This is the function JavaScript will call
+        if hasattr(self.viewer, 'on_ready_callback'):
+            self.viewer.on_ready_callback()
 
 class ModelViewer(QFrame):
     def __init__(self, parent=None):
@@ -83,6 +83,12 @@ class ModelViewer(QFrame):
         # Load the HTML file through the server
         self.browser.setUrl(QUrl(f"http://127.0.0.1:{self.port}/viewer.html"))
 
+        # Create a debounce timer
+        self.update_timer = QTimer()
+        self.update_timer.setSingleShot(True) # Only fire once
+        self.update_timer.setInterval(200) # Wait 200ms before updating
+        self.pending_object = None
+
     def closeEvent(self, event):
         """Stop the server when the widget is closed"""
         self.httpd.shutdown()
@@ -91,11 +97,27 @@ class ModelViewer(QFrame):
 
     def update_display(self, cq_object):
         """Exports geometry and notifies the browser to reload the file via HTTP"""
+        self.pending_object = cq_object
+        self.update_timer.start()
+
+        try:
+            self.update_timer.timeout.disconnect()
+        except:
+            pass
+
+        self.update_timer.timeout.connect(self._execute_update)
+
+
+
+    def _execute_update(self):
+        """The actual update happens here only after the user stops typing"""
+        if self.pending_object is None: return
+
         try:
             self.base_dir = os.path.dirname(os.path.abspath(__file__))
             stl_path = os.path.join(self.base_dir, "model.stl")
 
-            cq_object.export(stl_path)
+            self.pending_object.export(stl_path)
 
             import time
             t = int(time.time() * 1000) # Current time in miliseconds
@@ -103,9 +125,6 @@ class ModelViewer(QFrame):
             url = f"http://127.0.0.1:{self.port}/model.stl?t={t}"
 
             self.browser.page().runJavaScript(f"window.updateMesh({repr(url)})")
-
-            # self.browser.page().setDevToolsPage()
-            self.browser.page().devToolsPage()
 
         except Exception as e:
             self.print_to_console(str(e), "error")
