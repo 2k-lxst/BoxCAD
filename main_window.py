@@ -45,13 +45,17 @@ class BoxCAD(QMainWindow):
             self.ui_builder.initialize_btn.setToolTip("Click to begin your design")
             self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
 
-        # 4. Tell the viewer to run that function when JS says it's ready
+        # Tell the viewer to run that function when JS says it's ready
         self.viewer.set_on_ready_callback(unlock_ui)
 
         self.ui_builder.initialize_btn.clicked.connect(self.init_project)
 
     def init_project(self):
         self.ui_builder.project_initialized = True
+
+        js_code = "document.getElementById('loader-container').classList.add('fade-out');"
+
+        self.viewer.browser.page().runJavaScript(js_code)
 
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
 

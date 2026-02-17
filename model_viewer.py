@@ -4,8 +4,8 @@
 import os
 
 # Silence Chromium hardware errors
-os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
-os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
+# os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
+# os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
 import threading, socketserver, http.server
 from qtpy.QtWidgets import QFrame, QVBoxLayout

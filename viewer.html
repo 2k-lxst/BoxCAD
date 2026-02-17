@@ -23,16 +23,16 @@
         }
 
         #loader-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
+            position: fixed;
+            inset: 0;
             background: radial-gradient(circle, #272727 0%, #111111 100%);
+            width: 100vw; height: 100vh;
             display: flex;
-            flex-direction: column;
+            /* flex-direction: column; */
             justify-content: center;
             align-items: center;
-            z-index: 100;
-            transition: opacity 0.8s ease-out;
+            z-index: 1000;
+            transition: opacity 0.6s ease, visibility 0.6s;
             overflow: hidden;
         }
 
@@ -68,19 +68,41 @@
 
         .loader-content {
             position: relative;
-            z-index: 1;
+            text-align: center;
         }
 
-        .ring-loader {
-            width: 48px;
-            height: 48px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 15px auto;
+            border: 3px solid rgba(255, 255, 255, 0.1);
             border-top: 4px solid #ffffff;
-            animation: spin 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            border-radius: 50%;
+            animation: spin 1.5s cubic-bezier(0.47, 0.35, 0.25, 1) infinite;
         }
 
-        .loader-text {
+        .is-ready #loader-spinner {
+            display: none; /* Just delete it instantly when ready */
+        }
+
+        /* To fade the whole screen out eventually */
+        .fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        #spinner-wrapper {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+            opacity: 1;
+        }
+
+        #loader-text {
             margin-top: 17px;
             color: rgba(255, 255, 255, 0.8);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -89,6 +111,13 @@
             letter-spacing: 0.1em;
             opacity: 0.9;
             animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        /* Remove focus outlines from the container and the body */
+        #loader-container, body, canvas {
+            outline: none !important;
+            border: none !important;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* Removes the highlight on mobile/touch */
         }
 
         /* Settings menu */
@@ -219,9 +248,8 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { transform: rotate(360deg); opacity: 1; }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         @keyframes gridDrift {
@@ -233,9 +261,10 @@
 
 <body>
     <div id="loader-container">
-        <div class="loader-content" style="text-align: center;">
-            <div class="ring-loader" style="margin: 0 auto;"></div>
-            <div class="loader-text">Initializing scene...</div>
+        <div class="loader-content">
+            <div class="spinner" id="loader-spinner"></div>
+
+            <p id="loader-text">Initializing scene...</p>
         </div>
     </div>
 
@@ -668,22 +697,6 @@
             renderer.setSize(innerWidth, innerHeight);
         });
 
-        function hideLoader() {
-            const loader = document.getElementById("loader-container");
-
-            setTimeout(() => {
-                loader.style.opacity = "0";
-
-                if (window.pybridge) window.pybridge.on_viewer_ready()
-
-                document.getElementById("menu-button").classList.add("is-ready");
-
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 800); // Remove from DOM after fade
-            }, 300); // Artificial delay
-        }
-
         window.updateMesh = function(url) {
             loader.load(url, function (geometry) {
                 // Remove old mesh
@@ -736,6 +749,34 @@
                 console.error("[viewer.html] Error: ", err);
             });
         };
+
+        function hideLoader() {
+            const container = document.getElementById("loader-container");
+
+            setViewerReady();
+
+            // if (container) {
+            //     setTimeout(() => {
+            //         container.style.display = "none";
+            //     }, 2000);
+            // }
+        }
+
+        function setViewerReady() {
+            const container = document.getElementById("loader-container");
+            const text = document.getElementById("loader-text");
+            const wrapper = document.getElementById("spinner-wrapper");
+
+            setTimeout(() => {
+                container.classList.add('is-ready');
+
+                text.innerHTML = '<h2>Viewer Initialized!</h2><br>Click the <i>Initialize project</i> button in the parameter dock to proceed.';
+
+                if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
+                    window.pybridge.on_viewer_ready();
+                }
+            }, 500);
+        }
 
         // Render the scene
         (function animate() {
