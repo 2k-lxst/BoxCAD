@@ -68,8 +68,8 @@ class BuildUI:
         self.initialize_btn.setMinimumHeight(40)
 
         # Start disabled
-        self.initialize_btn.setEnabled(False)
-        self.initialize_btn.setToolTip("Please wait for the 3D engine to initialize...")
+        # self.initialize_btn.setEnabled(False)
+        # self.initialize_btn.setToolTip("Please wait for the 3D engine to initialize...")
 
         # Add to layout
         layout.addWidget(explainer)             # Welcome text

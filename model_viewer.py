@@ -4,8 +4,8 @@
 import os
 
 # Silence Chromium hardware errors
-os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
-os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
+# os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
+# os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
 import threading, socketserver, http.server
 from qtpy.QtWidgets import QFrame, QVBoxLayout
@@ -17,7 +17,7 @@ from http.server import SimpleHTTPRequestHandler
 
 class QuietHandler(SimpleHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
-        """Override the default error printer to use our custom console."""
+        """Override the default error printer to use the custom console."""
 
         if "favicon.ico" in self.path:
             if hasattr(self.server, 'printer'):
@@ -106,8 +106,6 @@ class ModelViewer(QFrame):
             pass
 
         self.update_timer.timeout.connect(self._execute_update)
-
-
 
     def _execute_update(self):
         """The actual update happens here only after the user stops typing"""

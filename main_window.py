@@ -20,12 +20,21 @@ from ui.main_window_ui import Ui_MainWindow
 # Import custom classes
 from build_ui import BuildUI
 from model_viewer import ModelViewer
+from enum import Enum, auto
 
 # TODO: Implement listeners for all values
+
+class AppState(Enum):
+    UNINITIALIZED = auto()
+    INITIALIZING = auto()
+    READY = auto()
+    ERROR = auto()
 
 class BoxCAD(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        self._state = AppState.UNINITIALIZED
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -41,25 +50,23 @@ class BoxCAD(QMainWindow):
 
         def unlock_ui():
             # This reaches into the ui class and enables the specific button
-            self.ui_builder.initialize_btn.setEnabled(True)
             self.ui_builder.initialize_btn.setToolTip("Click to begin your design")
             self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
 
-        # Tell the viewer to run that function when JS says it's ready
-        self.viewer.set_on_ready_callback(unlock_ui)
+        # Tell the viewer to run that function when JavaScript says it's ready
+        # self.viewer.set_on_ready_callback(unlock_ui)
+        self.viewer.set_on_ready_callback(self.init_project)
 
-        self.ui_builder.initialize_btn.clicked.connect(self.init_project)
+        # self.ui_builder.initialize_btn.clicked.connect(self.init_project)
+        self.ui_builder.initialize_btn.clicked.connect(
+            lambda: (self.set_state(AppState.INITIALIZING), self.init_project)
+        )
 
     def init_project(self):
         self.ui_builder.project_initialized = True
-
-        js_code = "document.getElementById('loader-container').classList.add('fade-out');"
-
-        self.viewer.browser.page().runJavaScript(js_code)
-
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
-
         self.connect_ui_signals()
+
         self.rebuild_geometry()
 
         self.print_to_console("Project initialized!", "success")
@@ -81,6 +88,27 @@ class BoxCAD(QMainWindow):
 
         except Exception as e:
             self.print_to_console(str(e), "error")
+
+    def set_state(self, new_state: AppState):
+        if self._state == new_state:
+            return
+
+        self._state = new_state
+        self._update_ui_for_state()
+
+    def _update_ui_for_state(self):
+        if self._state == AppState.INITIALIZING:
+            self.ui_builder.initialize_btn.setText("Initializing...")
+            self.ui_builder.initialize_btn.setEnabled(False)
+
+            self.viewer.browser.page().runJavaScript("window.setLoading();")
+
+        elif self._state == AppState.READY:
+            self.init_project()
+
+        elif self._state == AppState.ERROR:
+            # TODO: Call the viewer.html error handling
+            return
 
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored

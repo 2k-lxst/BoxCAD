@@ -72,6 +72,7 @@
         }
 
         .spinner {
+            display: none;
             width: 40px;
             height: 40px;
             margin: 0 auto 15px auto;
@@ -106,7 +107,6 @@
             margin-top: 17px;
             color: rgba(255, 255, 255, 0.8);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-weight: 500;
             font-size: 14px;
             letter-spacing: 0.1em;
             opacity: 0.9;
@@ -223,18 +223,6 @@
             border-radius: 4px;
         }
 
-        /* Measurement label */
-        /* .measurement-label {
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-family: sans-serif;
-            pointer-events: none;
-            white-space: nowrap;
-        } */
-
         /* Animations */
         @keyframes rotate {
             0% { transform: rotate(0deg); border-color: #007acc; }
@@ -264,7 +252,11 @@
         <div class="loader-content">
             <div class="spinner" id="loader-spinner"></div>
 
-            <p id="loader-text">Initializing scene...</p>
+            <div id="loader-text">
+                <h2>3D workspace not initialized.</h2><hr>
+
+                Click <i>Initialize Project</i> in the parameter dock to begin
+            </div>
         </div>
     </div>
 
@@ -628,6 +620,8 @@
         scene.add(dirLight);
 
         loader.load("./model.stl", geometry => {
+            text.innerHTML = "<h2>Initializing model...</h2><i>Please wait...</i>";
+
             // Load and compute the model.stl file
             geometry.center();
             geometry.computeBoundingBox();
@@ -650,6 +644,8 @@
 
             // Calculate bounds
             const box = new THREE.Box3().setFromObject(mesh);
+
+            text.innerHTML = "<h2>Initializing grid...</h2><i>Please wait...</i>";
 
             // size1 = 10 (A major line every 10mm (1cm))
             // size2 = 1  (A minor line every 1mm)
@@ -685,7 +681,6 @@
             controls.update();
 
             controls.saveState();
-            hideLoader();
         }, undefined, e => console.error(e))
 
         // Handle the resizing of the window
@@ -750,33 +745,21 @@
             });
         };
 
-        function hideLoader() {
-            const container = document.getElementById("loader-container");
-
-            setViewerReady();
-
-            // if (container) {
-            //     setTimeout(() => {
-            //         container.style.display = "none";
-            //     }, 2000);
-            // }
-        }
-
-        function setViewerReady() {
-            const container = document.getElementById("loader-container");
+        function setLoading() {
             const text = document.getElementById("loader-text");
-            const wrapper = document.getElementById("spinner-wrapper");
+            const loader = document.getElementById("loader-spinner");
 
-            setTimeout(() => {
-                container.classList.add('is-ready');
+            loader.style.display = "block"; // Hide spinner initially
 
-                text.innerHTML = '<h2>Viewer Initialized!</h2><br>Click the <i>Initialize project</i> button in the parameter dock to proceed.';
+            text.innerHTML = "<h2>Initializing Engine...</h2><i>Please wait...</i>";
 
-                if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
-                    window.pybridge.on_viewer_ready();
-                }
-            }, 500);
+            // Signal Python to unlock the button
+            if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
+                window.pybridge.on_viewer_ready();
+            }
         }
+
+        window.setLoading = setLoading;
 
         // Render the scene
         (function animate() {
