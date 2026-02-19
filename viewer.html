@@ -28,12 +28,21 @@
             background: radial-gradient(circle, #272727 0%, #111111 100%);
             width: 100vw; height: 100vh;
             display: flex;
-            /* flex-direction: column; */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            transition: opacity 0.6s ease, visibility 0.6s;
             overflow: hidden;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* To fade out the whole screen eventually */
+        #loader-container.fade-out {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
         }
 
         #loader-container::before {
@@ -84,12 +93,6 @@
 
         .is-ready #loader-spinner {
             display: none; /* Just delete it instantly when ready */
-        }
-
-        /* To fade the whole screen out eventually */
-        .fade-out {
-            opacity: 0;
-            visibility: hidden;
         }
 
         #spinner-wrapper {
@@ -620,7 +623,9 @@
         scene.add(dirLight);
 
         loader.load("./model.stl", geometry => {
-            text.innerHTML = "<h2>Initializing model...</h2><i>Please wait...</i>";
+            // const text = document.getElementById("loader-text");
+
+            // text.innerHTML = "<h2>Initializing model...</h2><i>Please wait...</i>";
 
             // Load and compute the model.stl file
             geometry.center();
@@ -644,8 +649,6 @@
 
             // Calculate bounds
             const box = new THREE.Box3().setFromObject(mesh);
-
-            text.innerHTML = "<h2>Initializing grid...</h2><i>Please wait...</i>";
 
             // size1 = 10 (A major line every 10mm (1cm))
             // size2 = 1  (A minor line every 1mm)
@@ -745,7 +748,7 @@
             });
         };
 
-        function setLoading() {
+        window.setLoading = function() {
             const text = document.getElementById("loader-text");
             const loader = document.getElementById("loader-spinner");
 
@@ -757,9 +760,13 @@
             if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
                 window.pybridge.on_viewer_ready();
             }
-        }
+        };
 
-        window.setLoading = setLoading;
+        window.revealViewer = function() {
+            const loader = document.getElementById('loader-container');
+
+            if (loader) loader.classList.add('fade-out');
+        };
 
         // Render the scene
         (function animate() {

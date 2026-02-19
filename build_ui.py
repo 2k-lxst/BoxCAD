@@ -65,11 +65,8 @@ class BuildUI:
 
         # Create and style the initialize project button
         self.initialize_btn = QPushButton("Initialize Project")
+        self.initialize_btn.setToolTip("Click to begin your design")
         self.initialize_btn.setMinimumHeight(40)
-
-        # Start disabled
-        # self.initialize_btn.setEnabled(False)
-        # self.initialize_btn.setToolTip("Please wait for the 3D engine to initialize...")
 
         # Add to layout
         layout.addWidget(explainer)             # Welcome text

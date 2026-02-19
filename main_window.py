@@ -50,16 +50,15 @@ class BoxCAD(QMainWindow):
 
         def unlock_ui():
             # This reaches into the ui class and enables the specific button
-            self.ui_builder.initialize_btn.setToolTip("Click to begin your design")
             self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
 
         # Tell the viewer to run that function when JavaScript says it's ready
-        # self.viewer.set_on_ready_callback(unlock_ui)
-        self.viewer.set_on_ready_callback(self.init_project)
+        self.viewer.set_on_ready_callback(unlock_ui)
+        # self.viewer.set_on_ready_callback(self.init_project)
 
         # self.ui_builder.initialize_btn.clicked.connect(self.init_project)
         self.ui_builder.initialize_btn.clicked.connect(
-            lambda: (self.set_state(AppState.INITIALIZING), self.init_project)
+            lambda: self.set_state(AppState.INITIALIZING)
         )
 
     def init_project(self):
@@ -68,6 +67,12 @@ class BoxCAD(QMainWindow):
         self.connect_ui_signals()
 
         self.rebuild_geometry()
+
+        QtCore.QTimer.singleShot(100, lambda:
+            self.viewer.browser.page().runJavaScript("window.revealViewer();")
+        )
+
+        self.set_state(AppState.READY)
 
         self.print_to_console("Project initialized!", "success")
 
@@ -84,7 +89,7 @@ class BoxCAD(QMainWindow):
 
             result = cq.Workplane("XY").box(l, w, h)
 
-            self.viewer.update_display(result)
+            if (self.viewer.update_timer): self.viewer.update_display(result)
 
         except Exception as e:
             self.print_to_console(str(e), "error")
@@ -103,8 +108,11 @@ class BoxCAD(QMainWindow):
 
             self.viewer.browser.page().runJavaScript("window.setLoading();")
 
-        elif self._state == AppState.READY:
             self.init_project()
+
+        elif self._state == AppState.READY:
+            # self.init_project()
+            pass
 
         elif self._state == AppState.ERROR:
             # TODO: Call the viewer.html error handling

@@ -87,6 +87,8 @@ class ModelViewer(QFrame):
         self.update_timer = QTimer()
         self.update_timer.setSingleShot(True) # Only fire once
         self.update_timer.setInterval(200) # Wait 200ms before updating
+        self.update_timer.timeout.connect(self._execute_update)
+
         self.pending_object = None
 
     def closeEvent(self, event):
@@ -99,13 +101,6 @@ class ModelViewer(QFrame):
         """Exports geometry and notifies the browser to reload the file via HTTP"""
         self.pending_object = cq_object
         self.update_timer.start()
-
-        try:
-            self.update_timer.timeout.disconnect()
-        except:
-            pass
-
-        self.update_timer.timeout.connect(self._execute_update)
 
     def _execute_update(self):
         """The actual update happens here only after the user stops typing"""
