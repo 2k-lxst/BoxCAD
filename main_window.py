@@ -54,9 +54,7 @@ class BoxCAD(QMainWindow):
 
         # Tell the viewer to run that function when JavaScript says it's ready
         self.viewer.set_on_ready_callback(unlock_ui)
-        # self.viewer.set_on_ready_callback(self.init_project)
 
-        # self.ui_builder.initialize_btn.clicked.connect(self.init_project)
         self.ui_builder.initialize_btn.clicked.connect(
             lambda: self.set_state(AppState.INITIALIZING)
         )
@@ -87,7 +85,11 @@ class BoxCAD(QMainWindow):
             w = self.ui_builder.widgets["width"].value()
             h = self.ui_builder.widgets["height"].value()
 
-            result = cq.Workplane("XY").box(l, w, h)
+            result = (
+                cq.Workplane("XY")
+                .box(w, l, h)
+                .translate((0, 0, h / 2))
+            )
 
             if (self.viewer.update_timer): self.viewer.update_display(result)
 
@@ -100,6 +102,8 @@ class BoxCAD(QMainWindow):
 
         self._state = new_state
         self._update_ui_for_state()
+
+        self.print_to_console(f"State of the app was just changed to *{new_state}*!", "state_change")
 
     def _update_ui_for_state(self):
         if self._state == AppState.INITIALIZING:
@@ -121,11 +125,13 @@ class BoxCAD(QMainWindow):
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored
 
-        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey"}
+        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey", "state_change": "magenta"}
 
         color = colors.get(type, "white")
 
-        print(colored(f"[{type.upper()}] {message}", color))
+        processed_message = message.replace("*", "\033[3m", 1).replace("*", "\033[23m", 1)
+
+        print(colored(f"[{type.replace("_", " ").upper()}] {processed_message}", color))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

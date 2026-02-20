@@ -79,23 +79,23 @@ class BuildUI:
     def build_dimensions_page(self):
         page, layout = self.create_form_page()
 
-        # Length
-        length_input = QDoubleSpinBox()
-        length_input.setRange(1, 1000)
-        length_input.setValue(10)
-        length_input.setSuffix(" mm")
-
-        layout.addRow("Length (X):", length_input)
-        self.widgets["length"] = length_input
-
         # Width
         width_input = QDoubleSpinBox()
         width_input.setRange(1, 1000)
         width_input.setValue(10)
         width_input.setSuffix(" mm")
 
-        layout.addRow("Width (Y):", width_input)
+        layout.addRow("Width (X):", width_input)
         self.widgets["width"] = width_input
+
+        # Length
+        length_input = QDoubleSpinBox()
+        length_input.setRange(1, 1000)
+        length_input.setValue(10)
+        length_input.setSuffix(" mm")
+
+        layout.addRow("Length (Y):", length_input)
+        self.widgets["length"] = length_input
 
         # Height
         height_input = QDoubleSpinBox()
