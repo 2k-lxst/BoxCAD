@@ -21,5 +21,7 @@ Width: 7.70
 Length: 9.20
 Protrusion: 1.45
 
-Clearance:
-TopClearance:
+Clearances:
+
+TopClearance: 2.5
+BottomClearance: 5
