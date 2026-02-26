@@ -1,6 +1,6 @@
 ![BoxCAD Banner](assets/thin_banner.png)
 
-# BoxCAD 📦
+# BoxCAD
 ## A Parametric Enclosure Designer for Makers
 
 **BoxCAD** is a lightweight, Python-powered desktop application for designing custom, 3D-printable project enclosures. Instead of manually modeling simple boxes in CAD software, you define dimensions and hardware presets, preview the result in real time, and export directly for manufacturing.
@@ -33,6 +33,20 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 - **PySide6** – Native-looking cross-platform GUI
 - **CadQuery** – Industrial-grade parametric geometry kernel
 - **PyQtGraph** – High-performance 3D visualization
+
+---
+
+## 💻 Compatibility & OS support
+
+BoxCAD was designed with Python and Three.js to be cross-platform.
+
+- **Windows 11 (primary):** Fully developed and tested on Windows 11.
+- **Windows 10:** Would most likely work also on Windows 10.
+- **macOS:** Supported via *Python 3.10+*. <br>
+  *Note: Terminal italics support might vary in the default Terminal app (iTerm2 recommended).*
+- **Linux:** Should be compatible on modern updated linux-based operating systems (e.g. Ubuntu, Fedora, etc.)
+
+**⚠️ Graphics: Requires a browser or enviroment supporting WebGL 2.0 for the 3D viewer.**
 
 ---
 
@@ -97,8 +111,11 @@ The welcome window will open, in which you can create a project, browse the hard
 ---
 
 ## 🏞️ Short demo GIF
-Below is a short GIF showing the functionality so far.
-![BoxCAD demo](assets/demo/demo.gif)
+Below is a short GIF showing the welcome screen functionality so far.<br>
+![BoxCAD welcome screen demo](assets/demo/welcome_screen_demo.gif)
+
+Below is a short GIF showing the main window functionality so far.<br>
+![BoxCAD main window demo](assets/demo/main_window_demo.gif)
 
 ## 📄 License
 
