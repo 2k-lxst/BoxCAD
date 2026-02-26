@@ -80,51 +80,58 @@ class BuildUI:
         page, layout = self.create_form_page()
 
         # Width
-        width_input = QDoubleSpinBox()
-        width_input.setRange(1, 1000)
-        width_input.setValue(10)
-        width_input.setSuffix(" mm")
+        self.width_input = QDoubleSpinBox()
+        self.width_input.setRange(1, 1000)
+        self.width_input.setValue(10)
+        self.width_input.setSuffix(" mm")
 
-        layout.addRow("Width (X):", width_input)
-        self.widgets["width"] = width_input
+        layout.addRow("Width (X):", self.width_input)
+        self.widgets["width"] = self.width_input
 
         # Length
-        length_input = QDoubleSpinBox()
-        length_input.setRange(1, 1000)
-        length_input.setValue(10)
-        length_input.setSuffix(" mm")
+        self.length_input = QDoubleSpinBox()
+        self.length_input.setRange(1, 1000)
+        self.length_input.setValue(10)
+        self.length_input.setSuffix(" mm")
 
-        layout.addRow("Length (Y):", length_input)
-        self.widgets["length"] = length_input
+        layout.addRow("Length (Y):", self.length_input)
+        self.widgets["length"] = self.length_input
 
         # Height
-        height_input = QDoubleSpinBox()
-        height_input.setRange(1, 1000)
-        height_input.setValue(10)
-        height_input.setSuffix(" mm")
+        self.height_input = QDoubleSpinBox()
+        self.height_input.setRange(1, 1000)
+        self.height_input.setValue(10)
+        self.height_input.setSuffix(" mm")
 
-        layout.addRow("Height (Z):", height_input)
-        self.widgets["height"] = height_input
+        layout.addRow("Height (Z):", self.height_input)
+        self.widgets["height"] = self.height_input
+
+        # Connect all dimension spin boxes to the update_max_thickness function
+        self.width_input.valueChanged.connect(self.update_max_thickness)
+        self.length_input.valueChanged.connect(self.update_max_thickness)
+        self.height_input.valueChanged.connect(self.update_max_thickness)
 
         # TODO: Dynamically update the wall thickness min/max
 
-        # Wall Thickness
-        l = self.widgets["length"].value()
-        w = self.widgets["width"].value()
-        h = self.widgets["height"].value()
+        self.wall_thickness_input = QDoubleSpinBox()
+        self.wall_thickness_input.setMinimum(1)
+        self.wall_thickness_input.setSuffix(" mm")
 
-        max_safe = (min(l, w, h) / 2) - 0.1
-
-        wall_thickness_input = QDoubleSpinBox()
-        wall_thickness_input.setRange(0.5, max_safe)
-        wall_thickness_input.setSuffix(" mm")
-
-        layout.addRow("Wall Thickness:", wall_thickness_input)
-        self.widgets["wall_thickness"] = wall_thickness_input
+        layout.addRow("Wall Thickness:", self.wall_thickness_input)
+        self.widgets["wall_thickness"] = self.wall_thickness_input
 
         self.add_vertical_spacer(layout)
 
         return page
+
+    def update_max_thickness(self):
+        w = self.width_input.value()
+        l = self.length_input.value()
+        h = self.height_input.value()
+
+        new_max = (min(w, l, h) / 2) - 0.1
+
+        self.wall_thickness_input.setMaximum(new_max)
 
     def build_assembly_page(self):
         page, layout = self.create_form_page()
@@ -160,9 +167,6 @@ class BuildUI:
 
     def build_hardware_page(self):
         page, layout = self.create_form_page()
-
-        # --- FILL THIS OUT ---
-        # Hint: Add the short explainer QLabel and the QPlainTextEdit
 
         # Standoff Height
         standoff_height_input = QDoubleSpinBox()

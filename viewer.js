@@ -32,7 +32,34 @@ menuButton.onclick = () => {
 
 // Reset camera
 document.getElementById('reset-cam').onclick = () => {
-    controls.reset();
+    if (!currentMesh) return;
+
+    // Calculate the bounding sphere of the current box
+    const boundingBox = new THREE.Box3().setFromObject(currentMesh);
+    const sphere = boundingBox.getBoundingSphere(new THREE.Sphere());
+    const center = sphere.center;
+    const radius = sphere.radius;
+
+    // Calculate ideal distance based on FOV (same as autoFit logic)
+    // Add a 1.2x multiplier to give the box some breathing room in the frame
+    const fovInRadians = (camera.fov * Math.PI) / 180;
+    const distance = (radius / Math.tan(fovInRadians / 2)) * 1.2;
+
+    // Using (distance, -distance, distance) ensures a consistent 3D perspective
+    camera.position.set(
+        center.x + distance,
+        center.y - distance,
+        center.z + distance
+    );
+
+    // Point at the actual object
+    camera.lookAt(center);
+
+    // Sync OrbitControls so mouse look doesn't "snap" or break
+    if (controls) {
+        controls.target.copy(center);
+        controls.update();
+    }
 };
 
 // Auto-fit toggle
@@ -369,14 +396,12 @@ loader.load("./model.stl", geometry => {
             grid.setColor(0x333333);
 
             menuButton.style.backgroundColor = "rgba(32, 32, 32, 0.8)";
-            menuButton.style.color = "white";
         } else {
             uiContainer.setAttribute("data-theme", "dark");
 
             grid.setColor(0xffffff);
 
             menuButton.style.backgroundColor = "rgba(85, 85, 85, 0.8)";
-            menuButton.style.color = "#202020";
         }
     };
 
