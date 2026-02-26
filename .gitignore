@@ -13,3 +13,14 @@ model.stl
 
 # Stop tracking _internal build folders
 **/_internal/
+
+# Exclude PyInstaller output
+dist/
+build/
+main-window-build/
+*.exe
+
+# PyInstaller temporary metadata
+*.toc
+*.manifest
+*.pyz
