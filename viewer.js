@@ -8,11 +8,6 @@ import { InfiniteGridHelper } from "./libs/InfiniteGridHelper.js";
 // Initialize the pybridge
 new QWebChannel(qt.webChannelTransport, function (channel) {
     window.pybridge = channel.objects.pybridge;
-
-    // Signal Python to unlock the button
-    if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
-        window.pybridge.on_viewer_ready();
-    }
 });
 
 let firstFrameRendered = false;
@@ -355,70 +350,80 @@ const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 500);
 grid.rotation.x = Math.PI / 2; // Rotate the grid by 90 degrees (PI / 2 radians)
 grid.position.z = -0.001; // Tiny offset to prevent "Z-fighting" (flickering) with the model floor
 
-loader.load("./model.stl", geometry => {
-    // Load and compute the model.stl file
-    geometry.center();
-    geometry.computeBoundingBox();
+scene.add(grid);
 
-    const size = new THREE.Vector3();
-    geometry.boundingBox.getSize(size);
+document.getElementById("grid-toggle").onchange = (e) => {
+    grid.visible = e.target.checked;
+}
 
-    // Create mesh
-    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
-    currentMesh = mesh;
+// Theme (background color)
+document.getElementById("theme-select").onchange = (e) => {
+    const selectedColor = parseInt(e.target.value);
+    const menuButton = document.getElementById("menu-button");
+    const uiContainer = document.getElementById('ui-container');
 
-    // Apply target scale before positioning
-    const maxDimensions = Math.max(size.x, size.y, size.z);
+    scene.background = new THREE.Color(selectedColor);
 
-    // Shift the geometry up so the bottom is the pivot
-    geometry.translate(size.x / 2, size.y / 2, size.z / 2);
-    mesh.position.set(0, 0, 0);
+    if (selectedColor > 0x888888) {
+        uiContainer.setAttribute("data-theme", "light");
 
-    scene.add(mesh);
+        grid.setColor(0x333333);
 
-    // Calculate bounds
-    const box = new THREE.Box3().setFromObject(mesh);
+        menuButton.style.backgroundColor = "rgba(32, 32, 32, 0.8)";
+    } else {
+        uiContainer.setAttribute("data-theme", "dark");
 
-    document.getElementById("grid-toggle").onchange = (e) => {
-        grid.visible = e.target.checked;
+        grid.setColor(0xffffff);
+
+        menuButton.style.backgroundColor = "rgba(85, 85, 85, 0.8)";
     }
+};
 
-    // Theme (background color)
-    document.getElementById("theme-select").onchange = (e) => {
-        const selectedColor = parseInt(e.target.value);
-        const menuButton = document.getElementById("menu-button");
-        const uiContainer = document.getElementById('ui-container');
+fetch("./model.stl")
+    .then(response => {
+        if (response.ok) {
+            loader.load("./model.stl", geometry => {
+                // Load and compute the model.stl file
+                geometry.center();
+                geometry.computeBoundingBox();
 
-        scene.background = new THREE.Color(selectedColor);
+                const size = new THREE.Vector3();
+                geometry.boundingBox.getSize(size);
 
-        if (selectedColor > 0x888888) {
-            uiContainer.setAttribute("data-theme", "light");
+                // Create mesh
+                const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
+                currentMesh = mesh;
 
-            grid.setColor(0x333333);
+                // Apply target scale before positioning
+                const maxDimensions = Math.max(size.x, size.y, size.z);
 
-            menuButton.style.backgroundColor = "rgba(32, 32, 32, 0.8)";
+                // Shift the geometry up so the bottom is the pivot
+                geometry.translate(size.x / 2, size.y / 2, size.z / 2);
+                mesh.position.set(0, 0, 0);
+
+                scene.add(mesh);
+
+                // Calculate bounds
+                const box = new THREE.Box3().setFromObject(mesh);
+
+                const gap = 0.5; // Distance away from farthest edge
+
+                updateMeasurements(currentMesh, size);
+
+                // Camera positioned relative to model size
+                const scaleFactor = 2 / maxDimensions;
+
+                controls.update();
+
+                controls.saveState();
+            }, undefined, e => console.error(e))
         } else {
-            uiContainer.setAttribute("data-theme", "dark");
-
-            grid.setColor(0xffffff);
-
-            menuButton.style.backgroundColor = "rgba(85, 85, 85, 0.8)";
+            console.log("No initial model found; starting with empty grid.");
         }
-    };
-
-    scene.add(grid);
-
-    const gap = 0.5; // Distance away from farthest edge
-
-    updateMeasurements(currentMesh, size);
-
-    // Camera positioned relative to model size
-    const scaleFactor = 2 / maxDimensions;
-
-    controls.update();
-
-    controls.saveState();
-}, undefined, e => console.error(e))
+    })
+    .catch(err => {
+        console.log("Ignoring initial 404 - Grid should still show.");
+    });
 
 // Handle the resizing of the window
 window.addEventListener("resize", () => {
@@ -489,6 +494,11 @@ window.setLoading = function() {
     loader.style.display = "block"; // Hide spinner initially
 
     text.innerHTML = "<h2>Initializing Engine...</h2><i>Please wait...</i>";
+
+    // Signal Python to unlock the button
+    if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
+        window.pybridge.on_viewer_ready();
+    }
 };
 
 window.revealViewer = function() {
