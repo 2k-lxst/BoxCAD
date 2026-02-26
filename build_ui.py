@@ -47,9 +47,18 @@ class BuildUI:
 
         footer = QLabel(
             "<div style='width:100%; text-align: center;'>"
-                "<span style='font-size: 10px; font-weight: bold; color: #737373;'>"
-                "HACK CLUB <span style='color: #ec3750;'>X</span> FLAVORTOWN</span><br>"
-                "<span style='color: #9c9c9c;'>Made with <span style='color: #ec3750;'>❤️</span> in Slovenia</span>"
+                "<span style='font-size: 12px; font-weight: bold; color: #737373;'>"
+                    "HACKCLUB"
+                    "<span style='color: transparent;'>.</span>"
+                    "<span style='font-size: 8px;'>ORG.</span> "
+                    "<span style='color: transparent;'>-</span>" # Invisible spacer
+                    "<span style='color: #ec3750;'>X</span> "
+                    "<span style='color: transparent;'>-</span>" # Invisible spacer
+                    "FLAVORTOWN"
+                "</span><br>"
+                "<span style='font-size: 11px; color: #9c9c9c;'>"
+                    "Made with <span style='color: #ec3750;'>❤️</span> in Slovenia"
+                "</span>"
             "</div>"
         )
 
