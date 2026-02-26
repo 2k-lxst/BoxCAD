@@ -1,6 +1,7 @@
 # Pyright false positive due to dynamic PySide attributes
 # pyright: reportAttributeAccessIssue=false
 
+import sys
 import os
 
 # Silence Chromium hardware errors
@@ -14,6 +15,22 @@ from qtpy.QtCore import QUrl, QObject, QTimer
 from qtpy.QtWebChannel import QWebChannel
 from PySide6.QtCore import Slot
 from http.server import SimpleHTTPRequestHandler
+
+def resource_path(relative_path):
+    """Get the absolute path to resource."""
+    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
+
+    return os.path.join(base_path, relative_path)
+
+def get_bundle_dir():
+    """Retrieves the absolute path to the application root, ensuring asset compatibility between the standard Python environment and a PyInstaller frozen executable."""
+    # If running as a bundled EXE
+    if getattr(sys, 'frozen', False):
+        # sys._MEIPASS is the temporary folder where PyInstaller unzips assets
+        return getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+
+    # If running in development (IDE)
+    return os.path.dirname(os.path.abspath(__file__))
 
 class QuietHandler(SimpleHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
@@ -69,7 +86,7 @@ class ModelViewer(QFrame):
         self.browser.page().setWebChannel(self.channel)
 
         # Serve the current folder via HTTP on a free port
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.base_dir = get_bundle_dir()
         os.chdir(self.base_dir) # Server serves files from this folder
 
         self.httpd = socketserver.TCPServer(("", 0), QuietHandler) # 0 = Pick a free port
@@ -107,20 +124,27 @@ class ModelViewer(QFrame):
         if self.pending_object is None: return
 
         try:
-            self.base_dir = os.path.dirname(os.path.abspath(__file__))
             stl_path = os.path.join(self.base_dir, "model.stl")
 
             self.pending_object.export(stl_path)
+
+            self.print_to_console(f"Export finished: {stl_path}", "success")
 
             import time
             t = int(time.time() * 1000) # Current time in miliseconds
 
             url = f"http://127.0.0.1:{self.port}/model.stl?t={t}"
 
-            self.browser.page().runJavaScript(f"window.updateMesh({repr(url)})")
+            self.browser.page().runJavaScript("""
+                if (typeof window.updateMesh === 'function') {
+                    window.updateMesh('%s');
+                } else {
+                    console.error('updateMesh not ready yet');
+                }
+            """ % url)
 
         except Exception as e:
-            self.print_to_console(str(e), "error")
+            self.print_to_console(f"STL Export Error: {str(e)}", "error")
 
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored

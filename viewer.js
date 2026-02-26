@@ -3,11 +3,16 @@ import { STLLoader } from "three/addons/loaders/STLLoader.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ViewHelper } from "three/addons/helpers/ViewHelper.js";
-import { InfiniteGridHelper } from "libs/InfiniteGridHelper.js";
+import { InfiniteGridHelper } from "./libs/InfiniteGridHelper.js";
 
 // Initialize the pybridge
 new QWebChannel(qt.webChannelTransport, function (channel) {
     window.pybridge = channel.objects.pybridge;
+
+    // Signal Python to unlock the button
+    if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
+        window.pybridge.on_viewer_ready();
+    }
 });
 
 let firstFrameRendered = false;
@@ -344,11 +349,13 @@ dirLight.shadow.camera.bottom = -200;
 
 scene.add(dirLight);
 
+// size1 = 10 (A major line every 10mm (1cm))
+// size2 = 1  (A minor line every 1mm)
+const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 500);
+grid.rotation.x = Math.PI / 2; // Rotate the grid by 90 degrees (PI / 2 radians)
+grid.position.z = -0.001; // Tiny offset to prevent "Z-fighting" (flickering) with the model floor
+
 loader.load("./model.stl", geometry => {
-    // const text = document.getElementById("loader-text");
-
-    // text.innerHTML = "<h2>Initializing model...</h2><i>Please wait...</i>";
-
     // Load and compute the model.stl file
     geometry.center();
     geometry.computeBoundingBox();
@@ -371,12 +378,6 @@ loader.load("./model.stl", geometry => {
 
     // Calculate bounds
     const box = new THREE.Box3().setFromObject(mesh);
-
-    // size1 = 10 (A major line every 10mm (1cm))
-    // size2 = 1  (A minor line every 1mm)
-    const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 500);
-    grid.rotation.x = Math.PI / 2; // Rotate the grid by 90 degrees (PI / 2 radians)
-    grid.position.z = -0.001; // Tiny offset to prevent "Z-fighting" (flickering) with the model floor
 
     document.getElementById("grid-toggle").onchange = (e) => {
         grid.visible = e.target.checked;
@@ -488,11 +489,6 @@ window.setLoading = function() {
     loader.style.display = "block"; // Hide spinner initially
 
     text.innerHTML = "<h2>Initializing Engine...</h2><i>Please wait...</i>";
-
-    // Signal Python to unlock the button
-    if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
-        window.pybridge.on_viewer_ready();
-    }
 };
 
 window.revealViewer = function() {

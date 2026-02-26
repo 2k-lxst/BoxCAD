@@ -10,3 +10,6 @@ __pycache__/
 # Model file
 # The model file is dynamic so it makes no sense to include it in the GitHub repo
 model.stl
+
+# Stop tracking _internal build folders
+**/_internal/

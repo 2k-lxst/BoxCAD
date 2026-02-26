@@ -2,6 +2,7 @@
 # pyright: reportAttributeAccessIssue=false
 
 import sys
+import os
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets, QtCore
@@ -30,6 +31,17 @@ class AppState(Enum):
     READY = auto()
     ERROR = auto()
 
+def resource_path(relative_path):
+    """Get the absolute path to resource, works for dev and PyInstaller."""
+    if getattr(sys, 'frozen', False):
+        # Path where the .exe lives
+        base_path = os.path.dirname(sys.executable)
+    else:
+        # Path where the script lives
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(base_path, relative_path)
+
 class BoxCAD(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -51,6 +63,7 @@ class BoxCAD(QMainWindow):
         def unlock_ui():
             # This reaches into the ui class and enables the specific button
             self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
+            self.viewer.browser.page().runJavaScript("if(window.revealViewer) window.revealViewer();")
 
         # Tell the viewer to run that function when JavaScript says it's ready
         self.viewer.set_on_ready_callback(unlock_ui)
@@ -65,10 +78,6 @@ class BoxCAD(QMainWindow):
         self.connect_ui_signals()
 
         self.rebuild_geometry()
-
-        QtCore.QTimer.singleShot(100, lambda:
-            self.viewer.browser.page().runJavaScript("window.revealViewer();")
-        )
 
         self.set_state(AppState.READY)
 

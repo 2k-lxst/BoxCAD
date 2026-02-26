@@ -1,0 +1,9 @@
+===== PyInstaller command to build the Main Window =====
+
+pyinstaller --noconfirm --onedir --windowed --name "BoxCAD-MainWindow" --distpath "./main-window-build" --add-data ".venv/Lib/site-packages/casadi;casadi" --add-data "ui;ui" --add-data "viewer.html;." --add-data "viewer.css;." --add-data "viewer.js;." --add-data "assets;assets" --add-data "libs;libs" "main_window.py"
+
+
+
+===== PyInstaller command to build the Welcome Screen =====
+
+pyinstaller --noconfirm --onefile --windowed --name "BoxCAD-WelcomeScreen" --distpath "./welcome-screen-build" --add-data "ui;ui" "main.py"
