@@ -111,8 +111,11 @@ The welcome window will open, in which you can create a project, browse the hard
 ---
 
 ## 🏞️ Short demo GIF
-Below is a short GIF showing the functionality so far.
-![BoxCAD demo](assets/demo/demo.gif)
+Below is a short GIF showing the welcome screen functionality so far.<br>
+![BoxCAD welcome screen demo](assets/demo/welcome_screen_demo.gif)
+
+Below is a short GIF showing the main window functionality so far.<br>
+![BoxCAD main window demo](assets/demo/main_window_demo.gif)
 
 ## 📄 License
 
