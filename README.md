@@ -1,6 +1,6 @@
 ![BoxCAD Banner](assets/thin_banner.png)
 
-# BoxCAD 📦
+# BoxCAD
 ## A Parametric Enclosure Designer for Makers
 
 **BoxCAD** is a lightweight, Python-powered desktop application for designing custom, 3D-printable project enclosures. Instead of manually modeling simple boxes in CAD software, you define dimensions and hardware presets, preview the result in real time, and export directly for manufacturing.
@@ -33,6 +33,12 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 - **PySide6** – Native-looking cross-platform GUI
 - **CadQuery** – Industrial-grade parametric geometry kernel
 - **PyQtGraph** – High-performance 3D visualization
+
+---
+
+## 🛠️ Supported operating systems
+
+BoxCAD is currently verified to work on **Windows 11**. Support for other operating systems is not guaranteed
 
 ---
 
