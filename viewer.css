@@ -1,0 +1,242 @@
+/* Loader */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #212121;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+canvas {
+    display: block;
+}
+
+#loader-container {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, #272727 0%, #111111 100%);
+    width: 100vw; height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    overflow: hidden;
+    transition: opacity 0.5s ease-out, visibility 0.5s;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* To fade out the whole screen eventually */
+#loader-container.fade-out {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+#loader-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            rgba(255, 255, 255, 0.025),
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px,
+            transparent 40px
+        ),
+
+        repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.025),
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px,
+            transparent 40px
+        );
+    mask-image: radial-gradient(
+        circle at center,
+        transparent 0%,
+        black 70%
+    );
+    animation: gridDrift 10s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.loader-content {
+    position: relative;
+    text-align: center;
+}
+
+.spinner {
+    display: none;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 15px auto;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1.5s cubic-bezier(0.47, 0.35, 0.25, 1) infinite;
+}
+
+#spinner-wrapper {
+    position: relative;
+    width: 100%;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease;
+    opacity: 1;
+}
+
+#loader-text {
+    margin-top: 17px;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    opacity: 0.9;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Remove focus outlines from the container and the body */
+#loader-container, body, canvas {
+    outline: none !important;
+    border: none !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0); /* Removes the highlight on mobile/touch */
+}
+
+/* Settings menu */
+#ui-container {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-family: "Segoe UI", sans-serif;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+#ui-container[data-theme="dark"] #menu-button {
+    background: rgba(85, 85, 85, 0.8);
+    color: #202020;
+}
+
+#ui-container[data-theme="light"] #menu-button {
+    background: rgba(32, 32, 32, 0.8);
+    color: white;
+}
+
+#menu-button {
+    display: flex;
+    opacity: 0;
+    pointer-events: auto;
+    font-size: 22px;
+    line-height: 1;
+    background: rgba(85, 85, 85, 0.8);
+    transform-origin: center;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    transition: background 0.3s ease,
+        font-size 0.2s ease,
+        transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.5s ease;
+}
+
+#menu-button.is-open {
+    background-color: #ec3750 !important;
+    color: white !important;
+}
+
+#menu-button:active {
+    transform: scale(0.9);
+}
+
+#settings-menu {
+    background: rgba(255, 255, 255, 0.95);
+    color: #333;
+    margin-top: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 200px;
+    transform-origin: top right;
+    transition:
+        opacity 0.17s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.17s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.17s;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+    pointer-events: auto;
+}
+
+#settings-menu.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.8);
+    pointer-events: none;
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
+
+#reset-cam {
+    width: 100%;
+    margin-top: 5px;
+    cursor: pointer;
+    background: #ec3750;
+    color: white;
+    border: none;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+/* Animations */
+@keyframes rotate {
+    0% { transform: rotate(0deg); border-color: #007acc; }
+    50% { transform: rotate(180deg); border-color: #4fc3f7; transform: scale(1.2); }
+    100% { transform: rotate(360deg); border-color: #007acc; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+    50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes gridDrift {
+    from { background-position: 0 0; }
+    to { background-position: 40px -40px; }
+}
