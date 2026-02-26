@@ -36,9 +36,17 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 
 ---
 
-## 💻 Supported operating systems
+## 💻 Compatibility & OS support
 
-BoxCAD is currently verified to work on **Windows 11**. Support for other operating systems is not guaranteed
+BoxCAD was designed with Python and Three.js to be cross-platform.
+
+- **Windows 11 (primary):** Fully developed and tested on Windows 11.
+- **Windows 10:** Would most likely work also on Windows 10.
+- **macOS:** Supported via *Python 3.10+*. <br>
+  *Note: Terminal italics support might vary in the default Terminal app (iTerm2 recommended).*
+- **Linux:** Should be compatible on modern updated linux-based operating systems (e.g. Ubuntu, Fedora, etc.)
+
+**⚠️ Graphics: Requires a browser or enviroment supporting WebGL 2.0 for the 3D viewer.**
 
 ---
 
