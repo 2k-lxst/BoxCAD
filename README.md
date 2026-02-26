@@ -36,7 +36,7 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 
 ---
 
-## 🛠️ Supported operating systems
+## 💻 Supported operating systems
 
 BoxCAD is currently verified to work on **Windows 11**. Support for other operating systems is not guaranteed
 
