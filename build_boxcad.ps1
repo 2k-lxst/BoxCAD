@@ -1,3 +1,14 @@
+# --- Configuration ---
+$venvPath = ".\.venv\Scripts\python.exe"
+
+# Safety check: Ensure the venv actually exists
+if (!(Test-Path $venvPath)) {
+    Write-Host "❌ Error: Virtual environment not found at .\.venv" -ForegroundColor Red
+    Write-Host "Please ensure you have a .venv folder in this directory."
+    Read-Host "Press Enter to exit"
+    exit
+}
+
 Write-Host "--- BoxCAD Build System ---" -ForegroundColor Cyan
 Write-Host "1) Build Main Window"
 Write-Host "2) Build Welcome Screen"
@@ -21,7 +32,8 @@ switch ($choice) {
 if ($buildMain) {
     Write-Host "`n🚀 Building BoxCAD-MainWindow..." -ForegroundColor Magenta
 
-    python -m PyInstaller --specpath "build_config" `
+    # Using & $venvPath ensures we use the project's specific Python environment
+    & $venvPath -m PyInstaller --specpath "build_config" `
         --workpath "build_temp" `
         --noconfirm `
         --onefile `
@@ -42,7 +54,7 @@ if ($buildMain) {
 if ($buildWelcome) {
     Write-Host "`n🚀 Building BoxCAD-WelcomeScreen..." -ForegroundColor Magenta
 
-    python -m PyInstaller --specpath "build_config" `
+    & $venvPath -m PyInstaller --specpath "build_config" `
         --workpath "build_temp" `
         --noconfirm `
         --onefile `
@@ -58,12 +70,10 @@ if ($buildWelcome) {
 
 Write-Host "`n🧹 Cleaning up build artifacts..." -ForegroundColor Yellow
 
-# Remove the temporary work directory
 if (Test-Path "build_temp") {
     Remove-Item -Recurse -Force "build_temp"
 }
 
-# Remove the spec files created in the build_config folder
 if (Test-Path "build_config") {
     Get-ChildItem "build_config" -Filter "*.spec" | Remove-Item -Force
 }
