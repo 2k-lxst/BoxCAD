@@ -10,13 +10,12 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     window.pybridge = channel.objects.pybridge;
 });
 
-let firstFrameRendered = false;
 let autoFitEnabled = true;
 let scene, camera, renderer, currentMesh;
+let measurementGroup = new THREE.Group();
 
 const loader = new STLLoader();
 
-window.scene = scene;
 window.loader = loader;
 
 // Toggle menu visibility
@@ -32,34 +31,7 @@ menuButton.onclick = () => {
 
 // Reset camera
 document.getElementById('reset-cam').onclick = () => {
-    if (!currentMesh) return;
-
-    // Calculate the bounding sphere of the current box
-    const boundingBox = new THREE.Box3().setFromObject(currentMesh);
-    const sphere = boundingBox.getBoundingSphere(new THREE.Sphere());
-    const center = sphere.center;
-    const radius = sphere.radius;
-
-    // Calculate ideal distance based on FOV (same as autoFit logic)
-    // Add a 1.2x multiplier to give the box some breathing room in the frame
-    const fovInRadians = (camera.fov * Math.PI) / 180;
-    const distance = (radius / Math.tan(fovInRadians / 2)) * 1.2;
-
-    // Using (distance, -distance, distance) ensures a consistent 3D perspective
-    camera.position.set(
-        center.x + distance,
-        center.y - distance,
-        center.z + distance
-    );
-
-    // Point at the actual object
-    camera.lookAt(center);
-
-    // Sync OrbitControls so mouse look doesn't "snap" or break
-    if (controls) {
-        controls.target.copy(center);
-        controls.update();
-    }
+    fitCameraToObject(currentMesh, 1.7);
 };
 
 // Auto-fit toggle
@@ -77,9 +49,6 @@ labelRenderer.domElement.style.pointerEvents = "none";
 document.body.appendChild(labelRenderer.domElement);
 
 function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff00ee, globalMax = 10) {
-    const group = new THREE.Group();
-    group.name = "measurementLabels";
-
     // Use a non-linear scaleFactor
     const scaleFactor = 0.3 + Math.sqrt(globalMax) * 0.3;
 
@@ -107,7 +76,7 @@ function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff0
     lineMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     lineMesh.castShadow = true;
 
-    group.add(lineMesh);
+    measurementGroup.add(lineMesh);
 
     // Create a smooth cone geometry
     const coneRadius = scaleFactor * 0.3;
@@ -132,7 +101,7 @@ function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff0
     arrow2.position.copy(pEnd).sub(dir.clone().multiplyScalar(coneHeight / 2));
     arrow2.castShadow = true;
 
-    group.add(arrow1, arrow2);
+    measurementGroup.add(arrow1, arrow2);
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -217,22 +186,32 @@ function createMeasurement(start, end, labelText, offsetVector, hexColor = 0xff0
 
     label.scale.set(baseHeight * aspectRatio, baseHeight, 1);
 
-    group.add(label);
-
-    scene.add(group);
+    measurementGroup.add(label);
 }
 
 function updateMeasurements(mesh, rawSize) {
-    // Remove all existing measurement groups
-    const toRemove = [];
+    // Remove all existing measurement groups and clean up the memory
+    while(measurementGroup.children.length > 0){
+        const group = measurementGroup.children[0];
 
-    scene.traverse((child) => {
-        if (child.name === "measurementLabels") {
-            toRemove.push(child);
-        }
-    });
+        // Traverse the individual measurement group to find meshes/sprites
+        group.traverse((node) => {
+            if (node.geometry) node.geometry.dispose();
+            if (node.material) {
+                if (Array.isArray(node.material)) {
+                    node.material.forEach(m => {
+                        if (m.map) m.map.dispose();
+                        m.dispose();
+                    });
+                } else {
+                    if (node.material.map) node.material.map.dispose();
+                    node.material.dispose();
+                }
+            }
+        });
 
-    toRemove.forEach(child => scene.remove(child));
+        measurementGroup.remove(group);
+    }
 
     // Get the actual visual box (after scaling)
     const visualBox = new THREE.Box3().setFromObject(mesh);
@@ -275,9 +254,33 @@ function updateMeasurements(mesh, rawSize) {
     );
 }
 
+function fitCameraToObject(mesh, multiplier = 1.7) {
+    const boundingBox = new THREE.Box3().setFromObject(mesh);
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * multiplier;
+
+    camera.position.set(
+        center.x + cameraZ,
+        center.y - cameraZ,
+        center.z + cameraZ
+    );
+
+    camera.lookAt(center);
+
+    if (controls) {
+        controls.target.copy(center);
+        controls.update();
+    }
+}
+
 // Create a new Three.js scene and set it's background color to a dark gray
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0x202020);
+
+scene.add(measurementGroup);
 
 // Create the camera
 camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
@@ -292,7 +295,7 @@ document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-// Tell renderere not to clear automatically
+// Tell renderer not to clear automatically
 renderer.autoClear = false;
 
 // Initialize ViewHelper
@@ -303,11 +306,7 @@ document.getElementById('helper-toggle').onchange = (e) => {
 };
 
 document.getElementById('dimensions-toggle').onchange = (e) => {
-    scene.traverse((object) => {
-        if (object.name === "measurementLabels") {
-            object.visible = e.target.checked;
-        }
-    });
+    measurementGroup.visible = e.target.checked;
 };
 
 // Add and configure a new ambient light
@@ -394,24 +393,15 @@ fetch("./model.stl")
                 const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
                 currentMesh = mesh;
 
-                // Apply target scale before positioning
-                const maxDimensions = Math.max(size.x, size.y, size.z);
-
                 // Shift the geometry up so the bottom is the pivot
-                geometry.translate(size.x / 2, size.y / 2, size.z / 2);
+                geometry.translate(-size.x / 2, size.y / 2, size.z / 2);
                 mesh.position.set(0, 0, 0);
 
                 scene.add(mesh);
 
-                // Calculate bounds
-                const box = new THREE.Box3().setFromObject(mesh);
-
-                const gap = 0.5; // Distance away from farthest edge
+                fitCameraToObject(currentMesh, 1.2);
 
                 updateMeasurements(currentMesh, size);
-
-                // Camera positioned relative to model size
-                const scaleFactor = 2 / maxDimensions;
 
                 controls.update();
 
@@ -445,14 +435,6 @@ window.updateMesh = function(url) {
             currentMesh.material.dispose();
         }
 
-        const toRemove = [];
-
-        scene.traverse((child) => {
-            if (child.name === "measurementLabels") toRemove.push(child);
-        })
-
-        toRemove.forEach(child => scene.remove(child));
-
         // Setup new geometry
         geometry.center();
         geometry.computeBoundingBox();
@@ -462,23 +444,14 @@ window.updateMesh = function(url) {
 
         currentMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
 
-        const maxDimensions = Math.max(size.x, size.y, size.z);
-
         geometry.translate(-size.x / 2, size.y / 2, size.z / 2);
         currentMesh.position.set(0, 0, 0);
 
         scene.add(currentMesh);
 
-        const newBox = new THREE.Box3().setFromObject(currentMesh);
-        const sphere = newBox.getBoundingSphere(new THREE.Sphere());
-
         if (autoFitEnabled) {
-            const distance = sphere.radius / Math.tan(Math.PI * camera.fov / 360);
-            camera.position.set(distance, -distance, distance);
+            fitCameraToObject(currentMesh, 1.7);
         }
-
-        controls.target.set(0, 0, size.z / 2);
-        controls.update();
 
         // Re-create the measurements with the new size
         updateMeasurements(currentMesh, size);

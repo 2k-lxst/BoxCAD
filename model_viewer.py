@@ -5,8 +5,8 @@ import sys
 import os
 
 # Silence Chromium hardware errors
-os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
-os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
+# os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
+# os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
 import threading, socketserver, http.server
 from qtpy.QtWidgets import QFrame, QVBoxLayout
@@ -24,12 +24,12 @@ def resource_path(relative_path):
 
 def get_bundle_dir():
     """Retrieves the absolute path to the application root, ensuring asset compatibility between the standard Python environment and a PyInstaller frozen executable."""
-    # If running as a bundled EXE
+    # If running as a bundled .exe
     if getattr(sys, 'frozen', False):
         # sys._MEIPASS is the temporary folder where PyInstaller unzips assets
         return getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
 
-    # If running in development (IDE)
+    # If running in a development enviroment (IDE)
     return os.path.dirname(os.path.abspath(__file__))
 
 class QuietHandler(SimpleHTTPRequestHandler):

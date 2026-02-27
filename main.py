@@ -72,6 +72,12 @@ class MainWindow(QMainWindow):
 
         self.populate_recent_projects_list()
 
+        try:
+            import pyi_splash # type: ignore
+            pyi_splash.close()
+        except ImportError: # This error happens if running in a development enviroment (IDE)
+            pass
+
     def set_taskbar_icon(self):
         # This tells Windows to treat this as a unique app otherwise it might show the default Python icon in the taskbar
         if os.name == "nt":

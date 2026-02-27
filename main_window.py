@@ -61,6 +61,12 @@ class BoxCAD(QMainWindow):
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
 
         def unlock_ui():
+            try:
+                import pyi_splash # type: ignore
+                pyi_splash.close()
+            except ImportError:  # This error happens if running in a development enviroment (IDE)
+                pass
+
             # This reaches into the ui class and enables the specific button
             self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
             self.viewer.browser.page().runJavaScript("if(window.revealViewer) window.revealViewer();")
