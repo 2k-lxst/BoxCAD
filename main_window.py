@@ -20,7 +20,6 @@ from ui.main_window_ui import Ui_MainWindow
 
 # Import custom classes
 from build_ui import BuildUI
-from model_viewer import ModelViewer
 from enum import Enum, auto
 
 # TODO: Implement listeners for all values
@@ -54,6 +53,12 @@ class BoxCAD(QMainWindow):
         self.setWindowTitle("BoxCAD - Parametric Enclosure Engine")
         self.resize(1200, 800)
 
+        try:
+            import pyi_splash # type: ignore
+            pyi_splash.close()
+        except ImportError:  # This error happens if running in a development enviroment (IDE)
+            pass
+
         # Initialize components
         self.ui_builder = BuildUI()
         self.viewer = self.ui.viewer
@@ -61,12 +66,6 @@ class BoxCAD(QMainWindow):
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
 
         def unlock_ui():
-            try:
-                import pyi_splash # type: ignore
-                pyi_splash.close()
-            except ImportError:  # This error happens if running in a development enviroment (IDE)
-                pass
-
             # This reaches into the ui class and enables the specific button
             self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
             self.viewer.browser.page().runJavaScript("if(window.revealViewer) window.revealViewer();")
@@ -90,20 +89,26 @@ class BoxCAD(QMainWindow):
         self.print_to_console("Project initialized!", "success")
 
     def connect_ui_signals(self):
-        self.ui_builder.widgets["length"].valueChanged.connect(self.rebuild_geometry)
-        self.ui_builder.widgets["width"].valueChanged.connect(self.rebuild_geometry)
-        self.ui_builder.widgets["height"].valueChanged.connect(self.rebuild_geometry)
+        self.ui_builder.widgets["outer_length"].valueChanged.connect(self.rebuild_geometry)
+        self.ui_builder.widgets["outer_width"].valueChanged.connect(self.rebuild_geometry)
+        self.ui_builder.widgets["outer_height"].valueChanged.connect(self.rebuild_geometry)
 
     def rebuild_geometry(self):
         try:
-            l = self.ui_builder.widgets["length"].value()
-            w = self.ui_builder.widgets["width"].value()
-            h = self.ui_builder.widgets["height"].value()
+            p_outerLength = self.ui_builder.widgets["outer_length"].value()
+            p_outerWidth = self.ui_builder.widgets["outer_width"].value()
+            p_outerHeight = self.ui_builder.widgets["outer_height"].value()
+
+            p_wallThickness = self.ui_builder.widgets["wall_thickness"].value()
+            p_sideRadius = self.ui_builder.widgets["side_radius"].value()
+            p_edgeRounding = self.ui_builder.widgets["edge_rounding"].value()
+
+            p_screwpostInset = self.ui_builder.widgets["screwpost_inset"].value()
 
             result = (
                 cq.Workplane("XY")
-                .box(w, l, h)
-                .translate((0, 0, h / 2))
+                .box(p_outerWidth, p_outerLength, p_outerHeight)
+                .translate((0, 0, p_outerHeight / 2))
             )
 
             if (self.viewer.update_timer): self.viewer.update_display(result)
@@ -130,7 +135,6 @@ class BoxCAD(QMainWindow):
             self.init_project()
 
         elif self._state == AppState.READY:
-            # self.init_project()
             pass
 
         elif self._state == AppState.ERROR:

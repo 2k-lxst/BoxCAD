@@ -39,31 +39,31 @@ if ($buildMain) {
         --onefile `
         --windowed `
         --name "BoxCAD-MainWindow" `
-        --distpath "./dist/" `
-        --splash "assets/splash_screen_600x400.png" `
-        --add-data ".venv/Lib/site-packages/casadi;casadi" `
-        --add-data "ui;ui" `
-        --add-data "viewer.html;." `
-        --add-data "viewer.css;." `
-        --add-data "viewer.js;." `
-        --add-data "assets;assets" `
-        --add-data "libs;libs" `
-        "main_window.py"
+        --distpath "$PSScriptRoot/dist/" `
+        --splash "$PSScriptRoot/assets/splash_screen_600x400.png" `
+        --add-data "$PSScriptRoot/.venv/Lib/site-packages/casadi;casadi" `
+        --add-data "$PSScriptRoot/ui;ui" `
+        --add-data "$PSScriptRoot/viewer.html;." `
+        --add-data "$PSScriptRoot/viewer.css;." `
+        --add-data "$PSScriptRoot/viewer.js;." `
+        --add-data "$PSScriptRoot/assets;assets" `
+        --add-data "$PSScriptRoot/libs;libs" `
+        "$PSScriptRoot/main_window.py"
 }
 
 if ($buildWelcome) {
     Write-Host "`n🚀 Building BoxCAD-WelcomeScreen..." -ForegroundColor Magenta
 
-    & $venvPath -m PyInstaller --specpath "build_config" `
-        --workpath "build_temp" `
+    & $venvPath -m PyInstaller --specpath "$PSScriptRoot/build_config" `
+        --workpath "$PSScriptRoot/build_temp" `
         --noconfirm `
         --onefile `
         --windowed `
         --name "BoxCAD-WelcomeScreen" `
-        --distpath "./dist/" `
-        --splash "assets/splash_screen_600x400.png" `
-        --add-data "ui;ui" `
-        "main.py"
+        --distpath "$PSScriptRoot/dist/" `
+        --splash "$PSScriptRoot/assets/splash_screen_600x400.png" `
+        --add-data "$PSScriptRoot/ui;ui" `
+        "$PSScriptRoot/main.py"
 }
 
 # --- Cleanup Phase ---
