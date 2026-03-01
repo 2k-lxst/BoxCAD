@@ -6,6 +6,7 @@ import os
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
+from qtpy import QtCore
 import qdarktheme
 
 # Qt shortcut aliases
@@ -90,9 +91,18 @@ class BoxCAD(QMainWindow):
         self.print_to_console("Project initialized!", "success")
 
     def connect_ui_signals(self):
-        self.ui_builder.widgets["outer_length"].valueChanged.connect(self.rebuild_geometry)
-        self.ui_builder.widgets["outer_width"].valueChanged.connect(self.rebuild_geometry)
-        self.ui_builder.widgets["outer_height"].valueChanged.connect(self.rebuild_geometry)
+        for key, widget in self.ui_builder.widgets.items():
+            if isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
+                widget.valueChanged.connect(self.rebuild_geometry)
+            elif isinstance(widget, QtWidgets.QCheckBox):
+                widget.stateChanged.connect(self.rebuild_geometry)
+            elif isinstance(widget, QtWidgets.QComboBox):
+                widget.currentIndexChanged.connect(self.rebuild_geometry)
+            elif isinstance(widget, QtWidgets.QPlainTextEdit):
+                widget.textChanged.connect(self.rebuild_geometry)
+
+        if hasattr(self.ui_builder, 'add_cutout_btn'):
+            self.ui_builder.add_cutout_btn.clicked.connect(self.rebuild_geometry)
 
     def rebuild_geometry(self):
         result = None
