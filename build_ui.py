@@ -184,7 +184,7 @@ class BuildUI:
 
         # Joint selection
         joint_type = QComboBox()
-        joint_type.addItems(["Butt Joint", "Lap Joint (Lip)", "Screwposts"])
+        joint_type.addItems(["Screwposts", "Butt Joint", "Lap Joint (Lip)"])
 
         layout.addRow("Joint type:", joint_type)
         self.widgets["joint_type"] = joint_type

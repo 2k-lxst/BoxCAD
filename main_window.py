@@ -5,7 +5,8 @@ import sys
 import os
 import cadquery as cq
 import PySide6 as PySide
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets
+import qdarktheme
 
 # Qt shortcut aliases
 QtWidgets = PySide.QtWidgets
@@ -31,7 +32,7 @@ class AppState(Enum):
     ERROR = auto()
 
 def resource_path(relative_path):
-    """Get the absolute path to resource, works for dev and PyInstaller."""
+    """Get the absolute path to resource, works for developement enviroment and PyInstaller."""
     if getattr(sys, 'frozen', False):
         # Path where the .exe lives
         base_path = os.path.dirname(sys.executable)
@@ -198,6 +199,7 @@ class BoxCAD(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    # qdarktheme.setup_theme() # Setup the dark theme
     app.setStyle("Fusion")
 
     window = BoxCAD()
