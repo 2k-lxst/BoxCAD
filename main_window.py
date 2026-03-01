@@ -104,14 +104,58 @@ class BoxCAD(QMainWindow):
             p_edgeRounding = self.ui_builder.widgets["edge_rounding"].value()
 
             p_screwpostInset = self.ui_builder.widgets["screwpost_inset"].value()
+            p_screwpostInnerDiameter = self.ui_builder.widgets["screwpost_inner_diameter"].value()
+            p_screwpostOuterDiameter = self.ui_builder.widgets["screwpost_outer_diameter"].value()
 
-            result = (
+            p_boreDiameter = self.ui_builder.widgets["bore_diameter"].value()
+            p_boreDepth = self.ui_builder.widgets["bore_depth"].value()
+            p_countersinkDiameter = self.ui_builder.widgets["countersink_diameter"].value()
+            p_countersinkAngle = self.ui_builder.widgets["countersink_angle"].value()
+
+            p_invertLid = self.ui_builder.widgets["invert_lid"].checked()
+            p_lipHeight = self.ui_builder.widgets["lip_height"].value()
+
+            outer_shell = (
                 cq.Workplane("XY")
-                .box(p_outerWidth, p_outerLength, p_outerHeight)
-                .translate((0, 0, p_outerHeight / 2))
+                .rect(p_outerWidth, p_outerLength)
+                .extrude(p_outerHeight + p_lipHeight)
             )
 
-            if (self.viewer.update_timer): self.viewer.update_display(result)
+            if p_sideRadius > p_edgeRounding:
+                outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
+            else:
+                outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
+                outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+
+            inner_shell = (
+                outer_shell.faces("<Z")
+                .workplane(p_wallThickness, True)
+                .rect((p_outerWidth - 2.0 * p_wallThickness), (p_outerLength - 2.0 * p_wallThickness))
+                .extrude(
+                    (p_outerHeight - 2.0 * p_wallThickness), False
+                )
+            )
+
+            inner_shell = inner_shell.edges("|Z").fillet(p_sideRadius - p_wallThickness)
+
+            box = outer_shell.cut(inner_shell)
+            box = outer_shell.cut(inner_shell)
+
+            screwpost_width = p_outerWidth - 2.0 * p_screwpostInset
+            screwpost_length = p_outerLength - 2.0 * p_screwpostInset
+
+            box = (
+                box.faces(">Z")
+                .workplane(-p_wallThickness)
+                .rect(screwpost_width, screwpost_length, forConstruction=True)
+                .vertices()
+                .circle(p_screwpostOuterDiameter / 2.0)
+                .circle(p_screwpostInnerDiameter / 2.0)
+                .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness), True)
+            )
+
+            # if (self.viewer.update_timer): self.viewer.update_display(result)
 
         except Exception as e:
             self.print_to_console(str(e), "error")
@@ -139,7 +183,7 @@ class BoxCAD(QMainWindow):
 
         elif self._state == AppState.ERROR:
             # TODO: Call the viewer.html error handling
-            return
+            pass
 
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored
