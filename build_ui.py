@@ -94,8 +94,8 @@ class BuildUI:
 
         # Width
         self.width_input = QDoubleSpinBox()
-        self.width_input.setRange(1, 1000)
-        self.width_input.setValue(10)
+        self.width_input.setRange(30, 1000)
+        self.width_input.setValue(50)
         self.width_input.setSuffix(" mm")
 
         layout.addRow("Outer Width (X):", self.width_input)
@@ -103,8 +103,8 @@ class BuildUI:
 
         # Length
         self.length_input = QDoubleSpinBox()
-        self.length_input.setRange(1, 1000)
-        self.length_input.setValue(10)
+        self.length_input.setRange(30, 1000)
+        self.length_input.setValue(50)
         self.length_input.setSuffix(" mm")
 
         layout.addRow("Outer Length (Y):", self.length_input)
@@ -112,17 +112,17 @@ class BuildUI:
 
         # Height
         self.height_input = QDoubleSpinBox()
-        self.height_input.setRange(1, 1000)
-        self.height_input.setValue(10)
+        self.height_input.setRange(15, 1000)
+        self.height_input.setValue(25)
         self.height_input.setSuffix(" mm")
 
         layout.addRow("Outer Height (Z):", self.height_input)
         self.widgets["outer_height"] = self.height_input
 
-        # Connect all dimension spin boxes to the update_max_thickness function
-        self.width_input.valueChanged.connect(self.update_max_thickness)
-        self.length_input.valueChanged.connect(self.update_max_thickness)
-        self.height_input.valueChanged.connect(self.update_max_thickness)
+        # Connect all dimension spin boxes to the update_max_values function
+        self.width_input.valueChanged.connect(self.update_max_values)
+        self.length_input.valueChanged.connect(self.update_max_values)
+        self.height_input.valueChanged.connect(self.update_max_values)
 
         # TODO: Dynamically update the wall thickness min/max
 
@@ -134,7 +134,6 @@ class BuildUI:
         self.widgets["wall_thickness"] = self.wall_thickness_input
 
         self.side_radius_input = QDoubleSpinBox()
-        self.side_radius_input.setMinimum(1)
         self.side_radius_input.setSuffix(" mm")
 
         layout.addRow("Side Radius:", self.side_radius_input)
@@ -150,14 +149,23 @@ class BuildUI:
 
         return page
 
-    def update_max_thickness(self):
+    def update_max_values(self):
         w = self.width_input.value()
         l = self.length_input.value()
         h = self.height_input.value()
 
-        new_max = (min(w, l, h) / 2) - 0.1
+        absoulte_min_dimensions = min(w, l, h)
+        max_wall_thickness = (absoulte_min_dimensions / 2.0) - 1.0
+        self.wall_thickness_input.setRange(0.5, max(0.5, max_wall_thickness))
 
-        self.wall_thickness_input.setMaximum(new_max)
+        max_side_radius = (min(w, l) / 2.0) - 0.1
+        self.side_radius_input.setMaximum(max(0.0, max_side_radius))
+
+        max_edge_round = (h / 2.0) - 0.1
+        self.edge_rounding_input.setMaximum(max(0.0, max_edge_round))
+
+        max_inset = (min(w, l) / 2.0) - 2.0
+        self.screwpost_inset_input.setMaximum(max(1.0, max_inset))
 
     def build_assembly_page(self):
         page, layout = self.create_form_page()
@@ -190,16 +198,18 @@ class BuildUI:
         self.widgets["joint_type"] = joint_type
 
         # TODO: Update the min/max value dyanmically
-        screwpost_inset_input = QDoubleSpinBox()
-        screwpost_inset_input.setRange(5, 200)
-        screwpost_inset_input.setSuffix(" mm")
+        self.screwpost_inset_input = QDoubleSpinBox()
+        self.screwpost_inset_input.setRange(1, 50)
+        self.screwpost_inset_input.setValue(10)
+        self.screwpost_inset_input.setSuffix(" mm")
 
-        layout.addRow("Screwpost Inset:", screwpost_inset_input)
-        self.widgets["screwpost_inset"] = screwpost_inset_input
+        layout.addRow("Screwpost Inset:", self.screwpost_inset_input)
+        self.widgets["screwpost_inset"] = self.screwpost_inset_input
 
         # TODO: Update the min/max value dyanmically
         screwpost_inner_diameter_input = QDoubleSpinBox()
-        screwpost_inner_diameter_input.setRange(5, 200)
+        screwpost_inner_diameter_input.setRange(1, 10)
+        screwpost_inner_diameter_input.setValue(3) # Default to M3 screws (3mm)
         screwpost_inner_diameter_input.setSuffix(" mm")
 
         layout.addRow("Screwpost Inner Diameter:", screwpost_inner_diameter_input)
@@ -212,25 +222,6 @@ class BuildUI:
 
         layout.addRow("Screwpost Outer Diameter:", screwpost_outer_diameter_input)
         self.widgets["screwpost_outer_diameter"] = screwpost_outer_diameter_input
-
-        # Fasteners
-        screwpost_inner_diameter = QDoubleSpinBox()
-        screwpost_inner_diameter.setRange(0, 10)
-        screwpost_inner_diameter.setSingleStep(0.5)
-        screwpost_inner_diameter.setValue(3.0) # Default to M3
-        screwpost_inner_diameter.setSuffix(" mm")
-
-        layout.addRow("Screwpost Inner Diameter:", screwpost_inner_diameter)
-        self.widgets["screwpost_inner_diameter"] = screwpost_inner_diameter
-
-        screwpost_outer_diameter = QDoubleSpinBox()
-        screwpost_outer_diameter.setRange(0, 10)
-        screwpost_outer_diameter.setSingleStep(0.5)
-        screwpost_outer_diameter.setValue(3.0) # Default to M3
-        screwpost_outer_diameter.setSuffix(" mm")
-
-        layout.addRow("Screwpost Outer Diameter:", screwpost_outer_diameter)
-        self.widgets["screwpost_outer_diameter"] = screwpost_outer_diameter
 
         self.add_vertical_spacer(layout)
 

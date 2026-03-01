@@ -5,8 +5,8 @@ import sys
 import os
 
 # Silence Chromium hardware errors
-# os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
-# os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
+os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
 import threading, socketserver, http.server
 from qtpy.QtWidgets import QFrame, QVBoxLayout
@@ -128,7 +128,7 @@ class ModelViewer(QFrame):
 
             self.pending_object.export(stl_path)
 
-            self.print_to_console(f"Export finished: {stl_path}", "success")
+            self.print_to_console(f"Successfully exported {stl_path}", "success")
 
             import time
             t = int(time.time() * 1000) # Current time in miliseconds

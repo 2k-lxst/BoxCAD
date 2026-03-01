@@ -95,6 +95,8 @@ class BoxCAD(QMainWindow):
         self.ui_builder.widgets["outer_height"].valueChanged.connect(self.rebuild_geometry)
 
     def rebuild_geometry(self):
+        result = None
+
         try:
             p_outerLength = self.ui_builder.widgets["outer_length"].value()
             p_outerWidth = self.ui_builder.widgets["outer_width"].value()
@@ -113,7 +115,7 @@ class BoxCAD(QMainWindow):
             p_countersinkDiameter = self.ui_builder.widgets["countersink_diameter"].value()
             p_countersinkAngle = self.ui_builder.widgets["countersink_angle"].value()
 
-            p_invertLid = self.ui_builder.widgets["invert_lid"].checked()
+            p_invertLid = self.ui_builder.widgets["invert_lid"].isChecked()
             p_lipHeight = self.ui_builder.widgets["lip_height"].value()
 
             outer_shell = (
@@ -122,25 +124,42 @@ class BoxCAD(QMainWindow):
                 .extrude(p_outerHeight + p_lipHeight)
             )
 
-            if p_sideRadius > p_edgeRounding:
-                outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
-                outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
-            else:
-                outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
-                outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+            limit = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.0 - 0.1
+
+            safe_side = min(p_sideRadius, limit)
+            safe_edge = min(p_edgeRounding, limit)
+
+            if safe_side > 0.01 or safe_edge > 0.01:
+                try:
+                    if safe_side > safe_edge:
+                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                        outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
+                    else:
+                        outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
+                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                except Exception:
+                    self.print_to_console("Fillet math failed, skipping rounding to prevent crash.", "warning")
+
+            # Prevent negative/zero inner fillets
+            # The inner radius must be at least 0.1 to prevent BRep errors
+            safe_inner_radius = max(0.1, p_sideRadius - p_wallThickness)
+
+            # Prevent wall thickness from exceeding box size
+            # Wall thickness can't be more than half the smallest dimension
+            max_wall_thickness = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.1
+            actual_wall_thickness = min(p_wallThickness, max_wall_thickness)
 
             inner_shell = (
                 outer_shell.faces("<Z")
-                .workplane(p_wallThickness, True)
-                .rect((p_outerWidth - 2.0 * p_wallThickness), (p_outerLength - 2.0 * p_wallThickness))
+                .workplane(actual_wall_thickness, True)
+                .rect((p_outerWidth - 2.0 * actual_wall_thickness), (p_outerLength - 2.0 * actual_wall_thickness))
                 .extrude(
-                    (p_outerHeight - 2.0 * p_wallThickness), False
+                    (p_outerHeight - 2.0 * actual_wall_thickness), False
                 )
             )
 
-            inner_shell = inner_shell.edges("|Z").fillet(p_sideRadius - p_wallThickness)
+            inner_shell = inner_shell.edges("|Z").fillet(safe_inner_radius)
 
-            box = outer_shell.cut(inner_shell)
             box = outer_shell.cut(inner_shell)
 
             screwpost_width = p_outerWidth - 2.0 * p_screwpostInset
@@ -156,7 +175,43 @@ class BoxCAD(QMainWindow):
                 .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness), True)
             )
 
-            # if (self.viewer.update_timer): self.viewer.update_display(result)
+            (lid, bottom) = (
+                box.faces(">Z")
+                .workplane(-p_wallThickness - p_lipHeight)
+                .split(keepTop=True, keepBottom=True)
+                .all()
+            )
+
+            lowerLid = lid.translate((0, 0, -p_lipHeight))
+            cutLip = lowerLid.cut(bottom).translate(
+                (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
+            )
+
+            screwHoleCenters = (
+                cutLip.faces(">Z")
+                .workplane(centerOption="CenterOfMass")
+                .rect(screwpost_width, screwpost_length, forConstruction=True)
+                .vertices()
+            )
+
+            if p_boreDiameter > 0 and p_boreDepth > 0:
+                topOfLid = screwHoleCenters.cboreHole(
+                    p_screwpostInnerDiameter, p_boreDiameter, p_boreDepth, 2.0 * p_wallThickness
+                )
+            elif p_countersinkDiameter > 0 and p_countersinkAngle > 0:
+                topOfLid = screwHoleCenters.cskHole(
+                    p_screwpostInnerDiameter, p_countersinkDiameter, p_countersinkAngle, 2.0 * p_wallThickness
+                )
+            else:
+                topOfLid = screwHoleCenters.hole(p_screwpostInnerDiameter, 2.0 * p_wallThickness)
+
+            if p_invertLid:
+                topOfLid = topOfLid.rotateAboutCenter((1, 0, 0), 180)
+
+            result = topOfLid.union(bottom)
+
+            if result and self.viewer:
+                self.viewer.update_display(result)
 
         except Exception as e:
             self.print_to_console(str(e), "error")
