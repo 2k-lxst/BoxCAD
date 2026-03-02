@@ -43,90 +43,40 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-class BoxCAD(QMainWindow):
-    def __init__(self):
+class WorkerSignals(QtCore.QObject):
+    # Signals must be defined on a QObject
+    result_ready = QtCore.Signal(object)
+    error_occurred = QtCore.Signal(str, str)
+
+class GeometryTask(QtCore.QRunnable):
+    def __init__(self, params):
         super().__init__()
+        self.params = params
+        self.signals = WorkerSignals()
 
-        self._state = AppState.UNINITIALIZED
-
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
-
-        self.setWindowTitle("BoxCAD - Parametric Enclosure Engine")
-        self.resize(1200, 800)
-
+    def run(self):
         try:
-            import pyi_splash # type: ignore
-            pyi_splash.close()
-        except ImportError:  # This error happens if running in a development enviroment (IDE)
-            pass
+            p = self.params
 
-        # Initialize components
-        self.ui_builder = BuildUI()
-        self.viewer = self.ui.viewer
+            p_outerLength = p["outer_length"]
+            p_outerWidth = p["outer_width"]
+            p_outerHeight = p["outer_height"]
 
-        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
+            p_wallThickness = p["wall_thickness"]
+            p_sideRadius = p["side_radius"]
+            p_edgeRounding = p["edge_rounding"]
 
-        def unlock_ui():
-            # This reaches into the ui class and enables the specific button
-            self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
-            self.viewer.browser.page().runJavaScript("if(window.revealViewer) window.revealViewer();")
+            p_screwpostInset = p["screwpost_inset"]
+            p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
+            p_screwpostOuterDiameter = p["screwpost_outer_diameter"]
 
-        # Tell the viewer to run that function when JavaScript says it's ready
-        self.viewer.set_on_ready_callback(unlock_ui)
+            p_boreDiameter = p["bore_diameter"]
+            p_boreDepth = p["bore_depth"]
+            p_countersinkDiameter = p["countersink_diameter"]
+            p_countersinkAngle = p["countersink_angle"]
 
-        self.ui_builder.initialize_btn.clicked.connect(
-            lambda: self.set_state(AppState.INITIALIZING)
-        )
-
-    def init_project(self):
-        self.ui_builder.project_initialized = True
-        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
-        self.connect_ui_signals()
-
-        self.rebuild_geometry()
-
-        self.set_state(AppState.READY)
-
-        self.print_to_console("Project initialized!", "success")
-
-    def connect_ui_signals(self):
-        for key, widget in self.ui_builder.widgets.items():
-            if isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
-                widget.valueChanged.connect(self.rebuild_geometry)
-            elif isinstance(widget, QtWidgets.QCheckBox):
-                widget.stateChanged.connect(self.rebuild_geometry)
-            elif isinstance(widget, QtWidgets.QComboBox):
-                widget.currentIndexChanged.connect(self.rebuild_geometry)
-            elif isinstance(widget, QtWidgets.QPlainTextEdit):
-                widget.textChanged.connect(self.rebuild_geometry)
-
-        if hasattr(self.ui_builder, 'add_cutout_btn'):
-            self.ui_builder.add_cutout_btn.clicked.connect(self.rebuild_geometry)
-
-    def rebuild_geometry(self):
-        result = None
-
-        try:
-            p_outerLength = self.ui_builder.widgets["outer_length"].value()
-            p_outerWidth = self.ui_builder.widgets["outer_width"].value()
-            p_outerHeight = self.ui_builder.widgets["outer_height"].value()
-
-            p_wallThickness = self.ui_builder.widgets["wall_thickness"].value()
-            p_sideRadius = self.ui_builder.widgets["side_radius"].value()
-            p_edgeRounding = self.ui_builder.widgets["edge_rounding"].value()
-
-            p_screwpostInset = self.ui_builder.widgets["screwpost_inset"].value()
-            p_screwpostInnerDiameter = self.ui_builder.widgets["screwpost_inner_diameter"].value()
-            p_screwpostOuterDiameter = self.ui_builder.widgets["screwpost_outer_diameter"].value()
-
-            p_boreDiameter = self.ui_builder.widgets["bore_diameter"].value()
-            p_boreDepth = self.ui_builder.widgets["bore_depth"].value()
-            p_countersinkDiameter = self.ui_builder.widgets["countersink_diameter"].value()
-            p_countersinkAngle = self.ui_builder.widgets["countersink_angle"].value()
-
-            p_invertLid = self.ui_builder.widgets["invert_lid"].isChecked()
-            p_lipHeight = self.ui_builder.widgets["lip_height"].value()
+            p_invertLid = p["invert_lid"]
+            p_lipHeight = p["lip_height"]
 
             outer_shell = (
                 cq.Workplane("XY")
@@ -148,7 +98,8 @@ class BoxCAD(QMainWindow):
                         outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
                         outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
                 except Exception:
-                    self.print_to_console("Fillet math failed, skipping rounding to prevent crash.", "warning")
+                    # Use the signal bridge to send the message back to the main window
+                    self.signals.error_occurred.emit("Fillet math failed, skipping rounding to prevent crash.", "warning")
 
             # Prevent negative/zero inner fillets
             # The inner radius must be at least 0.1 to prevent BRep errors
@@ -220,11 +171,104 @@ class BoxCAD(QMainWindow):
 
             result = topOfLid.union(bottom)
 
-            if result and self.viewer:
-                self.viewer.update_display(result)
-
+            self.signals.result_ready.emit(result)
         except Exception as e:
-            self.print_to_console(str(e), "error")
+            self.signals.error_occurred.emit(str(e), "error")
+
+class BoxCAD(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self._state = AppState.UNINITIALIZED
+
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+
+        self.setWindowTitle("BoxCAD - Parametric Enclosure Engine")
+        self.resize(1200, 800)
+
+        try:
+            import pyi_splash # type: ignore
+            pyi_splash.close()
+        except ImportError:  # This error happens if running in a development enviroment (IDE)
+            pass
+
+        # Initialize components
+        self.ui_builder = BuildUI()
+        self.viewer = self.ui.viewer
+
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
+
+        def unlock_ui():
+            # This reaches into the ui class and enables the specific button
+            self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
+            self.viewer.browser.page().runJavaScript("if(window.revealViewer) window.revealViewer();")
+
+        # Tell the viewer to run that function when JavaScript says it's ready
+        self.viewer.set_on_ready_callback(unlock_ui)
+
+        self.ui_builder.initialize_btn.clicked.connect(
+            lambda: self.set_state(AppState.INITIALIZING)
+        )
+
+        self.thread_pool = QtCore.QThreadPool.globalInstance()
+
+        self.rebuild_timer = QtCore.QTimer()
+        self.rebuild_timer.setSingleShot(True)
+        self.rebuild_timer.setInterval(200)
+        self.rebuild_timer.timeout.connect(self.execute_thread_build)
+
+    def rebuild_geometry(self):
+        """Called by UI signals. Just restarts the timer."""
+        self.rebuild_timer.start()
+
+    def execute_thread_build(self):
+        """Starts the actual background work."""
+        # Extract plain data from widgets (must stay on main thread)
+        params = {}
+
+        for k, v in self.ui_builder.widgets.items():
+            if hasattr(v, 'value'): # QDoubleSpinBox / QSpinBox
+                params[k] = v.value()
+            elif hasattr(v, 'isChecked'): # QCheckBox
+                params[k] = v.isChecked()
+            elif hasattr(v, 'currentText'): # QComboBox
+                params[k] = v.currentText()
+            elif hasattr(v, 'toPlainText'): # QPlainTextEdit (for coordinates)
+                params[k] = v.toPlainText()
+
+        # Create and connect the task
+        task = GeometryTask(params)
+        task.signals.result_ready.connect(self.viewer.update_display)
+        task.signals.error_occurred.connect(self.print_to_console)
+
+        # Dispatch to the pool
+        self.thread_pool.start(task)
+
+    def init_project(self):
+        self.ui_builder.project_initialized = True
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
+        self.connect_ui_signals()
+
+        self.rebuild_geometry()
+
+        self.set_state(AppState.READY)
+
+        self.print_to_console("Project initialized!", "success")
+
+    def connect_ui_signals(self):
+        for key, widget in self.ui_builder.widgets.items():
+            if isinstance(widget, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
+                widget.valueChanged.connect(self.rebuild_geometry)
+            elif isinstance(widget, QtWidgets.QCheckBox):
+                widget.stateChanged.connect(self.rebuild_geometry)
+            elif isinstance(widget, QtWidgets.QComboBox):
+                widget.currentIndexChanged.connect(self.rebuild_geometry)
+            elif isinstance(widget, QtWidgets.QPlainTextEdit):
+                widget.textChanged.connect(self.rebuild_geometry)
+
+        if hasattr(self.ui_builder, 'add_cutout_btn'):
+            self.ui_builder.add_cutout_btn.clicked.connect(self.rebuild_geometry)
 
     def set_state(self, new_state: AppState):
         if self._state == new_state:

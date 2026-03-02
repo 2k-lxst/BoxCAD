@@ -31,7 +31,7 @@ menuButton.onclick = () => {
 
 // Reset camera
 document.getElementById('reset-cam').onclick = () => {
-    fitCameraToObject(currentMesh, 1.7);
+    fitCameraToObject(currentMesh, 0.7);
 };
 
 // Auto-fit toggle
@@ -254,7 +254,7 @@ function updateMeasurements(mesh, rawSize) {
     );
 }
 
-function fitCameraToObject(mesh, multiplier = 1.7) {
+function fitCameraToObject(mesh, multiplier = 0.7) {
     const boundingBox = new THREE.Box3().setFromObject(mesh);
     const center = boundingBox.getCenter(new THREE.Vector3());
     const size = boundingBox.getSize(new THREE.Vector3());
@@ -399,7 +399,7 @@ fetch("./model.stl")
 
                 scene.add(mesh);
 
-                fitCameraToObject(currentMesh, 1.2);
+                fitCameraToObject(currentMesh, 0.7);
 
                 updateMeasurements(currentMesh, size);
 
@@ -450,7 +450,7 @@ window.updateMesh = function(url) {
         scene.add(currentMesh);
 
         if (autoFitEnabled) {
-            fitCameraToObject(currentMesh, 1.7);
+            fitCameraToObject(currentMesh, 0.7);
         }
 
         // Re-create the measurements with the new size
