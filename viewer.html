@@ -11,7 +11,7 @@
 <body>
     <div id="loader-container">
         <div class="loader-content">
-            <div class="spinner" id="loader-spinner"></div>
+            <span class="loader" id="loader-spinner"></span>
 
             <div id="loader-text">
                 <h2>3D workspace not initialized.</h2><hr>
@@ -63,6 +63,15 @@
             <button id="reset-cam">Reset Camera</button>
         </div>
     </div>
+
+    <div id="render-loader">
+        <span class="render-loader-text">●</span> RENDERING...
+    </div>
+
+    <script>
+        window.showLoader = () => { document.getElementById('render-loader').style.display = 'block'; };
+        window.hideLoader = () => { document.getElementById('render-loader').style.display = 'none'; };
+    </script>
 
     <!-- Use the import map to import Three.js -->
     <script type="importmap">

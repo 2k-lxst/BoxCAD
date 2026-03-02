@@ -223,7 +223,10 @@ class BoxCAD(QMainWindow):
         self.rebuild_timer.start()
 
     def execute_thread_build(self):
-        """Starts the actual background work."""
+        """Starts the background work and shows the loader."""
+        # Show loader instantly
+        self.viewer.browser.page().runJavaScript("window.showLoader();")
+
         # Extract plain data from widgets (must stay on main thread)
         params = {}
 
@@ -239,11 +242,21 @@ class BoxCAD(QMainWindow):
 
         # Create and connect the task
         task = GeometryTask(params)
-        task.signals.result_ready.connect(self.viewer.update_display)
-        task.signals.error_occurred.connect(self.print_to_console)
+        task.signals.result_ready.connect(self.on_render_success)
+        task.signals.error_occurred.connect(self.on_render_error)
 
         # Dispatch to the pool
         self.thread_pool.start(task)
+
+    def on_render_success(self, result):
+        """Update 3D viewer and hide loader"""
+        self.viewer.update_display(result)
+        self.viewer.browser.page().runJavaScript("window.hideLoader();")
+
+    def on_render_error(self, message, type):
+        """Print error and hide loader"""
+        self.print_to_console(message, type)
+        self.viewer.browser.page().runJavaScript("window.hideLoader();")
 
     def init_project(self):
         self.ui_builder.project_initialized = True
