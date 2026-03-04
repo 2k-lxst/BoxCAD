@@ -406,13 +406,19 @@ fetch("./model.stl")
                 controls.update();
 
                 controls.saveState();
+
+                // Signal Python to unlock the button
+                if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") window.pybridge.on_viewer_ready();
             }, undefined, e => console.error(e))
         } else {
-            console.log("No initial model found; starting with empty grid.");
+            console.log("[WARNING] No initial model found; starting with empty grid.");
+
+            // Signal Python to unlock the button
+            // if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") window.pybridge.on_viewer_ready();
         }
     })
     .catch(err => {
-        console.log("Ignoring initial 404 - Grid should still show.");
+        console.log("[WARNING] Ignoring initial 404 - Grid should still show.");
     });
 
 // Handle the resizing of the window
@@ -468,10 +474,7 @@ window.setLoading = function() {
 
     text.innerHTML = "<h2>Initializing Engine...</h2><i>Please wait...</i>";
 
-    // Signal Python to unlock the button
-    if (window.pybridge && typeof window.pybridge.on_viewer_ready === "function") {
-        window.pybridge.on_viewer_ready();
-    }
+
 };
 
 window.revealViewer = function() {

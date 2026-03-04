@@ -4,6 +4,7 @@
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox, QCheckBox
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
+from ui.main_window_ui import Ui_MainWindow
 
 class BuildUI:
     def __init__(self):
@@ -33,7 +34,7 @@ class BuildUI:
     # TODO: Add comments above each parameter to explain what the parameter does
     # TODO: Update the background color of the checkboxes
 
-    def build_welcome_page(self):
+    def build_welcome_page(self, viewer):
         """Creates the landing page for the toolbox."""
         page = QWidget()
 
@@ -76,10 +77,15 @@ class BuildUI:
         explainer.setWordWrap(True)
         explainer.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Create and style the initialize project button
+        viewer_page = viewer.browser.page()
+        js_reveal_command = "if (window.revealViewer) window.revealViewer();"
+
+        # Create and configure the initialize project button
         self.initialize_btn = QPushButton("Initialize Project")
-        self.initialize_btn.setToolTip("Click to begin your design")
+        self.initialize_btn.setEnabled(False)
+        self.initialize_btn.setToolTip("Waiting for 3D viewer to load...")
         self.initialize_btn.setMinimumHeight(40)
+        self.initialize_btn.clicked.connect(lambda: viewer_page.runJavaScript(js_reveal_command))
 
         # Add to layout
         layout.addWidget(explainer)             # Welcome text
@@ -94,7 +100,7 @@ class BuildUI:
 
         # Width
         self.width_input = QDoubleSpinBox()
-        self.width_input.setRange(30, 1000)
+        self.width_input.setRange(20, 1000)
         self.width_input.setValue(50)
         self.width_input.setSuffix(" mm")
 
@@ -103,7 +109,7 @@ class BuildUI:
 
         # Length
         self.length_input = QDoubleSpinBox()
-        self.length_input.setRange(30, 1000)
+        self.length_input.setRange(20, 1000)
         self.length_input.setValue(50)
         self.length_input.setSuffix(" mm")
 
@@ -123,8 +129,6 @@ class BuildUI:
         self.width_input.valueChanged.connect(self.update_max_values)
         self.length_input.valueChanged.connect(self.update_max_values)
         self.height_input.valueChanged.connect(self.update_max_values)
-
-        # TODO: Dynamically update the wall thickness min/max
 
         self.wall_thickness_input = QDoubleSpinBox()
         self.wall_thickness_input.setMinimum(1)
@@ -200,7 +204,7 @@ class BuildUI:
         # TODO: Update the min/max value dyanmically
         self.screwpost_inset_input = QDoubleSpinBox()
         self.screwpost_inset_input.setRange(1, 50)
-        self.screwpost_inset_input.setValue(10)
+        self.screwpost_inset_input.setValue(5)
         self.screwpost_inset_input.setSuffix(" mm")
 
         layout.addRow("Screwpost Inset:", self.screwpost_inset_input)
@@ -381,7 +385,7 @@ class BuildUI:
 
         layout.addItem(spacer)
 
-    def populate_toolbox(self, toolbox: QToolBox):
+    def populate_toolbox(self, toolbox: QToolBox, viewer):
         """Clears and rebuilds the toolbox pages."""
         self.print_to_console("Populating toolbox!", "info")
 
@@ -397,7 +401,7 @@ class BuildUI:
         if not self.project_initialized:
             self.print_to_console("Project not initialized yet! Building welcome page...", "info")
 
-            welcome_widget = self.build_welcome_page()
+            welcome_widget = self.build_welcome_page(viewer)
 
             toolbox.setMinimumWidth(300)
 

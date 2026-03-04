@@ -7,7 +7,6 @@ import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
 from qtpy import QtCore
-import qdarktheme
 
 # Qt shortcut aliases
 QtWidgets = PySide.QtWidgets
@@ -157,14 +156,23 @@ class GeometryTask(QtCore.QRunnable):
 
             if p_boreDiameter > 0 and p_boreDepth > 0:
                 topOfLid = screwHoleCenters.cboreHole(
-                    p_screwpostInnerDiameter, p_boreDiameter, p_boreDepth, 2.0 * p_wallThickness
+                    p_screwpostInnerDiameter,
+                    p_boreDiameter,
+                    p_boreDepth,
+                    p_outerHeight * 2 # Cut through everything
                 )
             elif p_countersinkDiameter > 0 and p_countersinkAngle > 0:
                 topOfLid = screwHoleCenters.cskHole(
-                    p_screwpostInnerDiameter, p_countersinkDiameter, p_countersinkAngle, 2.0 * p_wallThickness
+                    p_screwpostInnerDiameter,
+                    p_countersinkDiameter,
+                    p_countersinkAngle,
+                    p_outerHeight * 2 # Cut through everything
                 )
             else:
-                topOfLid = screwHoleCenters.hole(p_screwpostInnerDiameter, 2.0 * p_wallThickness)
+                topOfLid = screwHoleCenters.hole(
+                    p_screwpostInnerDiameter,
+                    p_outerHeight * 2 # Cut through everything
+                )
 
             if p_invertLid:
                 topOfLid = topOfLid.rotateAboutCenter((1, 0, 0), 180)
@@ -197,12 +205,13 @@ class BoxCAD(QMainWindow):
         self.ui_builder = BuildUI()
         self.viewer = self.ui.viewer
 
-        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer)
 
         def unlock_ui():
             # This reaches into the ui class and enables the specific button
-            self.ui_builder.print_to_console("3D Viewer is ready. UI Unlocked!", "success")
-            self.viewer.browser.page().runJavaScript("if(window.revealViewer) window.revealViewer();")
+            self.ui_builder.initialize_btn.setEnabled(True)
+            self.ui_builder.initialize_btn.setToolTip("Click to begin your design")
+            self.ui_builder.print_to_console("3D Viewer is ready!", "success")
 
         # Tell the viewer to run that function when JavaScript says it's ready
         self.viewer.set_on_ready_callback(unlock_ui)
@@ -260,7 +269,7 @@ class BoxCAD(QMainWindow):
 
     def init_project(self):
         self.ui_builder.project_initialized = True
-        self.ui_builder.populate_toolbox(self.ui.parametersToolBox)
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer)
         self.connect_ui_signals()
 
         self.rebuild_geometry()
@@ -290,16 +299,16 @@ class BoxCAD(QMainWindow):
         self._state = new_state
         self._update_ui_for_state()
 
-        self.print_to_console(f"State of the app was just changed to *{new_state}*!", "state_change")
+        self.print_to_console(f"State of the app was just changed to {str(new_state).lstrip("AppState.")} ({new_state})!", "state_change")
 
     def _update_ui_for_state(self):
         if self._state == AppState.INITIALIZING:
             self.ui_builder.initialize_btn.setText("Initializing...")
             self.ui_builder.initialize_btn.setEnabled(False)
-
             self.viewer.browser.page().runJavaScript("window.setLoading();")
 
-            self.init_project()
+            # Delay the heavy function by 1s (1000 ms)
+            QtCore.QTimer.singleShot(1000, self.init_project)
 
         elif self._state == AppState.READY:
             pass
@@ -315,13 +324,10 @@ class BoxCAD(QMainWindow):
 
         color = colors.get(type, "white")
 
-        processed_message = message.replace("*", "\033[3m", 1).replace("*", "\033[23m", 1)
-
-        print(colored(f"[{type.replace("_", " ").upper()}] {processed_message}", color))
+        print(colored(f"[{type.replace("_", " ").upper()}] {message}", color))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    # qdarktheme.setup_theme() # Setup the dark theme
     app.setStyle("Fusion")
 
     window = BoxCAD()
