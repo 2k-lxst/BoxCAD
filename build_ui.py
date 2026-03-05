@@ -100,7 +100,7 @@ class BuildUI:
 
         # Width
         self.width_input = QDoubleSpinBox()
-        self.width_input.setRange(20, 1000)
+        self.width_input.setRange(20, 400)
         self.width_input.setValue(50)
         self.width_input.setSuffix(" mm")
 
@@ -109,7 +109,7 @@ class BuildUI:
 
         # Length
         self.length_input = QDoubleSpinBox()
-        self.length_input.setRange(20, 1000)
+        self.length_input.setRange(20, 400)
         self.length_input.setValue(50)
         self.length_input.setSuffix(" mm")
 
@@ -118,17 +118,17 @@ class BuildUI:
 
         # Height
         self.height_input = QDoubleSpinBox()
-        self.height_input.setRange(15, 1000)
+        self.height_input.setRange(15, 400)
         self.height_input.setValue(25)
         self.height_input.setSuffix(" mm")
 
         layout.addRow("Outer Height (Z):", self.height_input)
         self.widgets["outer_height"] = self.height_input
 
-        # Connect all dimension spin boxes to the update_max_values function
-        self.width_input.valueChanged.connect(self.update_max_values)
-        self.length_input.valueChanged.connect(self.update_max_values)
-        self.height_input.valueChanged.connect(self.update_max_values)
+        # Connect all dimension spin boxes to the update_min_max_values function
+        self.width_input.valueChanged.connect(self.update_min_max_values)
+        self.length_input.valueChanged.connect(self.update_min_max_values)
+        self.height_input.valueChanged.connect(self.update_min_max_values)
 
         self.wall_thickness_input = QDoubleSpinBox()
         self.wall_thickness_input.setMinimum(1)
@@ -153,7 +153,10 @@ class BuildUI:
 
         return page
 
-    def update_max_values(self):
+    # TODO:   Update:
+    # TODO: -
+
+    def update_min_max_values(self):
         w = self.width_input.value()
         l = self.length_input.value()
         h = self.height_input.value()
@@ -175,13 +178,6 @@ class BuildUI:
         page, layout = self.create_form_page()
 
         # Lid
-        lid_height_input = QDoubleSpinBox()
-        lid_height_input.setRange(5, 200)
-        lid_height_input.setSuffix(" mm")
-
-        layout.addRow("Lid Height:", lid_height_input)
-        self.widgets["lid_height"] = lid_height_input
-
         invert_lid_checkbox = QCheckBox()
 
         layout.addRow("Invert Lid (for 3D printing):", invert_lid_checkbox)
@@ -197,6 +193,7 @@ class BuildUI:
         # Joint selection
         joint_type = QComboBox()
         joint_type.addItems(["Screwposts", "Butt Joint", "Lap Joint (Lip)"])
+        # QComboBox Index:   ===== 0 ====  ===== 1 ====  ======= 2 =======
 
         layout.addRow("Joint type:", joint_type)
         self.widgets["joint_type"] = joint_type
@@ -257,8 +254,9 @@ class BuildUI:
         self.widgets["countersink_diameter"] = countersink_diameter_input
 
         countersink_angle_input = QDoubleSpinBox()
-        countersink_angle_input.setRange(5, 200)
-        countersink_angle_input.setSuffix(" mm")
+        countersink_angle_input.setRange(60, 120)
+        countersink_angle_input.setValue(90)
+        countersink_angle_input.setSuffix(" °")
 
         layout.addRow("Countersink Angle:", countersink_angle_input)
         self.widgets["countersink_angle"] = countersink_angle_input

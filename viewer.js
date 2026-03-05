@@ -333,7 +333,7 @@ dirLight.shadow.mapSize.height = 1024;
 
 // How close or far an object can be to the light source before it stops casting a shadow.
 dirLight.shadow.camera.near = 0.5;
-dirLight.shadow.camera.far = 500;
+dirLight.shadow.camera.far = 2500;
 
 // Expand the shadow capture area to fit larger boxes
 dirLight.shadow.camera.left = -200;

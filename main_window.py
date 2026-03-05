@@ -64,6 +64,7 @@ class GeometryTask(QtCore.QRunnable):
             p_wallThickness = p["wall_thickness"]
             p_sideRadius = p["side_radius"]
             p_edgeRounding = p["edge_rounding"]
+            p_jointType = p["joint_type"]
 
             p_screwpostInset = p["screwpost_inset"]
             p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
@@ -88,17 +89,21 @@ class GeometryTask(QtCore.QRunnable):
             safe_side = min(p_sideRadius, limit)
             safe_edge = min(p_edgeRounding, limit)
 
-            if safe_side > 0.01 or safe_edge > 0.01:
+            if safe_side > 0.01:
+                outer_shell = outer_shell.edges("|Z").fillet(safe_side)
+
+            # Apply edge rounding (Top and bottom horizontal edges)
+            # Use ">Z or <Z" to target the horizontal loops specifically
+            if safe_edge > 0.01:
                 try:
-                    if safe_side > safe_edge:
-                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
-                        outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
-                    else:
-                        outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
-                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                    outer_shell = outer_shell.edges("#Z").fillet(safe_edge)
                 except Exception:
-                    # Use the signal bridge to send the message back to the main window
-                    self.signals.error_occurred.emit("Fillet math failed, skipping rounding to prevent crash.", "warning")
+                    # If #Z fails because the vertical fillet changed the topology,
+                    # target the top and bottom faces specifically.
+                    outer_shell = outer_shell.edges(cq.selectors.SumSelector(
+                        cq.selectors.AndSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.Z), cq.selectors.NotSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.X))),
+                        cq.selectors.AndSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.Z), cq.selectors.NotSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.Y)))
+                    )).fillet(safe_edge)
 
             # Prevent negative/zero inner fillets
             # The inner radius must be at least 0.1 to prevent BRep errors
@@ -143,6 +148,7 @@ class GeometryTask(QtCore.QRunnable):
             )
 
             lowerLid = lid.translate((0, 0, -p_lipHeight))
+
             cutLip = lowerLid.cut(bottom).translate(
                 (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
             )
