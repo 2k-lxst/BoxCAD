@@ -153,23 +153,21 @@ class BuildUI:
 
         return page
 
-    # TODO:   Update:
-    # TODO: -
-
     def update_min_max_values(self):
         w = self.width_input.value()
         l = self.length_input.value()
         h = self.height_input.value()
 
         absoulte_min_dimensions = min(w, l, h)
+
         max_wall_thickness = (absoulte_min_dimensions / 2.0) - 1.0
         self.wall_thickness_input.setRange(0.5, max(0.5, max_wall_thickness))
 
         max_side_radius = (min(w, l) / 2.0) - 0.1
         self.side_radius_input.setMaximum(max(0.0, max_side_radius))
 
-        max_edge_round = (h / 2.0) - 0.1
-        self.edge_rounding_input.setMaximum(max(0.0, max_edge_round))
+        max_edge_rounding = (h / 2.0) - 0.1
+        self.edge_rounding_input.setMaximum(max(0.0, max_edge_rounding))
 
         max_inset = (min(w, l) / 2.0) - 2.0
         self.screwpost_inset_input.setMaximum(max(1.0, max_inset))
