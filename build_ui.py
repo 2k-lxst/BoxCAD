@@ -158,19 +158,27 @@ class BuildUI:
         l = self.length_input.value()
         h = self.height_input.value()
 
-        absoulte_min_dimensions = min(w, l, h)
+        t = self.wall_thickness_input.value()
+        r = self.side_radius_input.value()
 
+        absoulte_min_dimensions = min(w, l, h)
         max_wall_thickness = (absoulte_min_dimensions / 2.0) - 1.0
         self.wall_thickness_input.setRange(0.5, max(0.5, max_wall_thickness))
 
         max_side_radius = (min(w, l) / 2.0) - 0.1
         self.side_radius_input.setMaximum(max(0.0, max_side_radius))
 
-        max_edge_rounding = (h / 2.0) - 0.1
-        self.edge_rounding_input.setMaximum(max(0.0, max_edge_rounding))
-
         max_inset = (min(w, l) / 2.0) - 2.0
         self.screwpost_inset_input.setMaximum(max(1.0, max_inset))
+
+        max_bore_depth = t - 2
+        self.bore_depth_input.setMaximum(max(0, max_bore_depth))
+
+        max_edge_round = (h / 2.0) - 0.5
+        self.edge_rounding_input.setMaximum(max(0, max_edge_round))
+
+        max_lip = h - (t * 2.0) - 2.0
+        self.widgets["lip_height"].setMaximum(max(1.0, max_lip))
 
     def build_assembly_page(self):
         page, layout = self.create_form_page()
@@ -181,12 +189,12 @@ class BuildUI:
         layout.addRow("Invert Lid (for 3D printing):", invert_lid_checkbox)
         self.widgets["invert_lid"] = invert_lid_checkbox
 
-        lip_height_input = QDoubleSpinBox()
-        lip_height_input.setRange(5, 200)
-        lip_height_input.setSuffix(" mm")
+        self.lip_height_input = QDoubleSpinBox()
+        self.lip_height_input.setRange(5, 200)
+        self.lip_height_input.setSuffix(" mm")
 
-        layout.addRow("Lip Height:", lip_height_input)
-        self.widgets["lip_height"] = lip_height_input
+        layout.addRow("Lip Height:", self.lip_height_input)
+        self.widgets["lip_height"] = self.lip_height_input
 
         # Joint selection
         joint_type = QComboBox()
@@ -196,7 +204,6 @@ class BuildUI:
         layout.addRow("Joint type:", joint_type)
         self.widgets["joint_type"] = joint_type
 
-        # TODO: Update the min/max value dyanmically
         self.screwpost_inset_input = QDoubleSpinBox()
         self.screwpost_inset_input.setRange(1, 50)
         self.screwpost_inset_input.setValue(5)
@@ -205,22 +212,20 @@ class BuildUI:
         layout.addRow("Screwpost Inset:", self.screwpost_inset_input)
         self.widgets["screwpost_inset"] = self.screwpost_inset_input
 
-        # TODO: Update the min/max value dyanmically
-        screwpost_inner_diameter_input = QDoubleSpinBox()
-        screwpost_inner_diameter_input.setRange(1, 10)
-        screwpost_inner_diameter_input.setValue(3) # Default to M3 screws (3mm)
-        screwpost_inner_diameter_input.setSuffix(" mm")
+        self.screwpost_inner_diameter_input = QDoubleSpinBox()
+        self.screwpost_inner_diameter_input.setRange(1, 10)
+        self.screwpost_inner_diameter_input.setValue(3) # Default to M3 screws (3mm)
+        self.screwpost_inner_diameter_input.setSuffix(" mm")
 
-        layout.addRow("Screwpost Inner Diameter:", screwpost_inner_diameter_input)
-        self.widgets["screwpost_inner_diameter"] = screwpost_inner_diameter_input
+        layout.addRow("Screwpost Inner Diameter:", self.screwpost_inner_diameter_input)
+        self.widgets["screwpost_inner_diameter"] = self.screwpost_inner_diameter_input
 
-        # TODO: Update the min/max value dyanmically
-        screwpost_outer_diameter_input = QDoubleSpinBox()
-        screwpost_outer_diameter_input.setRange(5, 200)
-        screwpost_outer_diameter_input.setSuffix(" mm")
+        self.screwpost_outer_diameter_input = QDoubleSpinBox()
+        self.screwpost_outer_diameter_input.setRange(5, 200)
+        self.screwpost_outer_diameter_input.setSuffix(" mm")
 
-        layout.addRow("Screwpost Outer Diameter:", screwpost_outer_diameter_input)
-        self.widgets["screwpost_outer_diameter"] = screwpost_outer_diameter_input
+        layout.addRow("Screwpost Outer Diameter:", self.screwpost_outer_diameter_input)
+        self.widgets["screwpost_outer_diameter"] = self.screwpost_outer_diameter_input
 
         self.add_vertical_spacer(layout)
 
@@ -230,19 +235,19 @@ class BuildUI:
         page, layout = self.create_form_page()
 
         # Bore
-        bore_diameter_input = QDoubleSpinBox()
-        bore_diameter_input.setRange(5, 200)
-        bore_diameter_input.setSuffix(" mm")
+        self.bore_diameter_input = QDoubleSpinBox()
+        self.bore_diameter_input.setRange(5, 200)
+        self.bore_diameter_input.setSuffix(" mm")
 
-        layout.addRow("Bore Diameter:", bore_diameter_input)
-        self.widgets["bore_diameter"] = bore_diameter_input
+        layout.addRow("Bore Diameter:", self.bore_diameter_input)
+        self.widgets["bore_diameter"] = self.bore_diameter_input
 
-        bore_depth_input = QDoubleSpinBox()
-        bore_depth_input.setRange(5, 200)
-        bore_depth_input.setSuffix(" mm")
+        self.bore_depth_input = QDoubleSpinBox()
+        self.bore_depth_input.setRange(5, 200)
+        self.bore_depth_input.setSuffix(" mm")
 
-        layout.addRow("Bore Depth:", bore_depth_input)
-        self.widgets["bore_depth"] = bore_depth_input
+        layout.addRow("Bore Depth:", self.bore_depth_input)
+        self.widgets["bore_depth"] = self.bore_depth_input
 
         countersink_diameter_input = QDoubleSpinBox()
         countersink_diameter_input.setRange(5, 200)
