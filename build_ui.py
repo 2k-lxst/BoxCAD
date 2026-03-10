@@ -50,6 +50,11 @@ class BuildUI:
             "<i>This will unlock all editing tools</i>"
         )
 
+        self.performance_warning = QLabel(
+            "<b>Note:</b> Initializing the 3D engine may take a few moments "
+            "depending on your hardware specifications."
+        )
+
         footer = QLabel(
             "<div style='width:100%; text-align: center;'>"
                 "<span style='font-size: 12px; font-weight: bold; color: #737373;'>"
@@ -72,11 +77,6 @@ class BuildUI:
         explainer.setWordWrap(True)
         explainer.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        # Style and configure the footer text
-        explainer.setStyleSheet("color: #777777; font-size: 13px;")
-        explainer.setWordWrap(True)
-        explainer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
         viewer_page = viewer.browser.page()
         js_reveal_command = "if (window.revealViewer) window.revealViewer();"
 
@@ -87,9 +87,15 @@ class BuildUI:
         self.initialize_btn.setMinimumHeight(40)
         self.initialize_btn.clicked.connect(lambda: viewer_page.runJavaScript(js_reveal_command))
 
+        self.performance_warning.setWordWrap(True)
+        self.performance_warning.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # Using a distinct "Warning Orange" color
+        self.performance_warning.setStyleSheet("color: #E68A00; font-size: 11px; margin-top: 5px;")
+
         # Add to layout
         layout.addWidget(explainer)             # Welcome text
         layout.addWidget(self.initialize_btn)   # The button
+        layout.addWidget(self.performance_warning) # The warning label
         layout.addStretch(1)                    # Pushes everything below it to the bottom
         layout.addWidget(footer)                # Footer
 
@@ -196,14 +202,6 @@ class BuildUI:
         layout.addRow("Lip Height:", self.lip_height_input)
         self.widgets["lip_height"] = self.lip_height_input
 
-        # Joint selection
-        joint_type = QComboBox()
-        joint_type.addItems(["Screwposts", "Butt Joint", "Lap Joint (Lip)"])
-        # QComboBox Index:   ===== 0 ====  ===== 1 ====  ======= 2 =======
-
-        layout.addRow("Joint type:", joint_type)
-        self.widgets["joint_type"] = joint_type
-
         self.screwpost_inset_input = QDoubleSpinBox()
         self.screwpost_inset_input.setRange(1, 50)
         self.screwpost_inset_input.setValue(5)
@@ -235,6 +233,12 @@ class BuildUI:
         page, layout = self.create_form_page()
 
         # Bore
+        hole_type = QComboBox()
+        hole_type.addItems(["None (no modifications)", "Counterbore", "Countersink"])
+
+        layout.addRow("Hole type:", hole_type)
+        self.widgets["hole_type"] = hole_type
+
         self.bore_diameter_input = QDoubleSpinBox()
         self.bore_diameter_input.setRange(5, 200)
         self.bore_diameter_input.setSuffix(" mm")
@@ -257,7 +261,7 @@ class BuildUI:
         self.widgets["countersink_diameter"] = countersink_diameter_input
 
         countersink_angle_input = QDoubleSpinBox()
-        countersink_angle_input.setRange(60, 120)
+        countersink_angle_input.setRange(60, 90)
         countersink_angle_input.setValue(90)
         countersink_angle_input.setSuffix(" °")
 

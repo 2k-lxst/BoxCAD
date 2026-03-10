@@ -474,7 +474,7 @@ window.setLoading = function() {
 
     text.innerHTML = "<h2>Initializing Engine...</h2><i>Please wait...</i>";
 
-
+    return true;
 };
 
 window.revealViewer = function() {

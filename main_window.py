@@ -64,8 +64,8 @@ class GeometryTask(QtCore.QRunnable):
             p_wallThickness = p["wall_thickness"]
             p_sideRadius = p["side_radius"]
             p_edgeRounding = p["edge_rounding"]
-            p_jointType = p["joint_type"]
 
+            p_holeType = p["hole_type"]
             p_screwpostInset = p["screwpost_inset"]
             p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
             p_screwpostOuterDiameter = p["screwpost_outer_diameter"]
@@ -78,8 +78,6 @@ class GeometryTask(QtCore.QRunnable):
             p_invertLid = p["invert_lid"]
             p_lipHeight = p["lip_height"]
 
-            p_floorThickness = 2.0 # 2mm constant floor thickness
-
             outer_shell = (
                 cq.Workplane("XY")
                 .rect(p_outerWidth, p_outerLength)
@@ -91,25 +89,21 @@ class GeometryTask(QtCore.QRunnable):
             safe_side = min(p_sideRadius, limit)
             safe_edge = min(p_edgeRounding, limit)
 
-            if safe_side > 0.01:
-                outer_shell = outer_shell.edges("|Z").fillet(safe_side)
-
-            # Apply edge rounding (Top and bottom horizontal edges)
-            # Use ">Z or <Z" to target the horizontal loops specifically
-            if safe_edge > 0.01:
+            if safe_side > 0.01 or safe_edge > 0.01:
                 try:
-                    outer_shell = outer_shell.edges("#Z").fillet(safe_edge)
+                    if safe_side > safe_edge:
+                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                        outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
+                    else:
+                        outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
+                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
                 except Exception:
-                    # If #Z fails because the vertical fillet changed the topology,
-                    # target the top and bottom faces specifically.
-                    outer_shell = outer_shell.edges(cq.selectors.SumSelector(
-                        cq.selectors.AndSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.Z), cq.selectors.NotSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.X))),
-                        cq.selectors.AndSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.Z), cq.selectors.NotSelector(cq.selectors.ParallelHasAncestorSelector(cq.Direction.Y)))
-                    )).fillet(safe_edge)
+                    # Use the signal bridge to send the message back to the main window
+                    self.signals.error_occurred.emit("Fillet math failed, skipping rounding to prevent crash.", "warning")
 
             # Prevent negative/zero inner fillets
             # The inner radius must be at least 0.1 to prevent BRep errors
-            safe_inner_radius = 0.1 if (p_sideRadius - p_wallThickness) < 0.1 else (p_sideRadius - p_wallThickness)
+            safe_inner_radius = max(0.1, p_sideRadius - p_wallThickness)
 
             # Prevent wall thickness from exceeding box size
             # Wall thickness can't be more than half the smallest dimension
@@ -118,7 +112,7 @@ class GeometryTask(QtCore.QRunnable):
 
             inner_shell = (
                 outer_shell.faces("<Z")
-                .workplane(p_floorThickness, True)
+                .workplane(actual_wall_thickness, True)
                 .rect((p_outerWidth - 2.0 * actual_wall_thickness), (p_outerLength - 2.0 * actual_wall_thickness))
                 .extrude(
                     (p_outerHeight - 2.0 * actual_wall_thickness), False
@@ -126,80 +120,65 @@ class GeometryTask(QtCore.QRunnable):
             )
 
             inner_shell = inner_shell.edges("|Z").fillet(safe_inner_radius)
-            lid = None
-            bottom = None
 
             box = outer_shell.cut(inner_shell)
 
-            split_z = -p_wallThickness - p_lipHeight
+            screwpost_width = p_outerWidth - 2.0 * p_screwpostInset
+            screwpost_length = p_outerLength - 2.0 * p_screwpostInset
 
-            lid, bottom = box.faces(">Z").workplane(split_z).split(keepTop=True, keepBottom=True).all()
+            box = (
+                box.faces(">Z")
+                .workplane(-p_wallThickness)
+                .rect(screwpost_width, screwpost_length, forConstruction=True)
+                .vertices()
+                .circle(p_screwpostOuterDiameter / 2.0)
+                .circle(p_screwpostInnerDiameter / 2.0)
+                .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness), True)
+            )
 
-            if p_jointType == "Screwposts":
-                inner_anchor = p_wallThickness + p_screwpostOuterDiameter / 2.0
-                actual_inset = inner_anchor + p_screwpostInset
+            (lid, bottom) = (
+                box.faces(">Z")
+                .workplane(-p_wallThickness - p_lipHeight)
+                .split(keepTop=True, keepBottom=True)
+                .all()
+            )
 
-                bottom = (
-                    bottom.faces("<Z")
-                    .workplane(p_floorThickness)
-                    .rect(p_outerWidth - 2.0 * actual_inset, p_outerLength - 2.0 * actual_inset, forConstruction=True)
-                    .vertices()
-                    .circle(p_screwpostOuterDiameter / 2.0)
-                    .extrude(p_outerHeight - p_wallThickness - p_lipHeight - p_floorThickness)
+            lowerLid = lid.translate((0, 0, -p_lipHeight))
+            cutLip = lowerLid.cut(bottom).translate(
+                (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
+            )
+
+            screwHoleCenters = (
+                cutLip.faces(">Z")
+                .workplane(centerOption="CenterOfMass")
+                .rect(screwpost_width, screwpost_length, forConstruction=True)
+                .vertices()
+            )
+
+            if p_holeType == "Counterbore" and p_boreDiameter > 0 and p_boreDepth > 0:
+                topOfLid = screwHoleCenters.cboreHole(
+                    p_screwpostInnerDiameter,
+                    p_boreDiameter,
+                    p_boreDepth,
+                    p_outerHeight * 2
                 )
-
-                screwHoleCenters = (
-                    lid.faces(">Z")
-                    .workplane(centerOption="CenterOfMass")
-                    .rect(p_outerWidth - 2.0 * actual_inset, p_outerLength - 2.0 * actual_inset, forConstruction=True)
-                    .vertices()
+            elif p_holeType == "Countersink" and p_countersinkDiameter > 0 and p_countersinkAngle > 0:
+                topOfLid = screwHoleCenters.cskHole(
+                    p_screwpostInnerDiameter,
+                    p_countersinkDiameter,
+                    p_countersinkAngle,
+                    p_outerHeight * 2
                 )
-
-                if p_boreDiameter > 0 and p_boreDepth > 0:
-                    lid = screwHoleCenters.cboreHole(
-                        p_screwpostInnerDiameter,
-                        p_boreDiameter,
-                        p_boreDepth,
-                        p_outerHeight * 2 # Cut through everything
-                    )
-                elif p_countersinkDiameter > 0 and p_countersinkAngle > 0:
-                    lid = screwHoleCenters.cskHole(
-                        p_screwpostInnerDiameter,
-                        p_countersinkDiameter,
-                        p_countersinkAngle,
-                        p_outerHeight * 2 # Cut through everything
-                    )
-                else:
-                    lid = screwHoleCenters.hole(
-                        p_screwpostInnerDiameter,
-                        p_outerHeight * 2 # Cut through everything
-                    )
-
-            elif p_jointType == "Lap Joint (Lip)":
-                bottom = (
-                    bottom.faces(">Z")
-                    .workplane(-p_wallThickness)
-                    .rect(p_outerWidth - 2.0 * p_wallThickness, p_outerLength - 2.0 * p_wallThickness, forConstruction=True)
-                    .rect(p_outerWidth - 4.0 * p_wallThickness, p_outerLength - 4.0 * p_wallThickness, forConstruction=True)
-                    .extrude(p_lipHeight)
+            else:
+                topOfLid = screwHoleCenters.hole(
+                    p_screwpostInnerDiameter,
+                    p_outerHeight * 2
                 )
-
-                clearance = 0.2 # 0.2mm gap for print tolerance
-
-                lid = (
-                    lid.faces("<Z").workplane(0)
-                    .rect(p_outerWidth - 2.0 * p_wallThickness + clearance, p_outerLength - 2.0 * p_wallThickness + clearance)
-                    .rect(p_outerWidth - 4.0 * p_wallThickness, p_outerLength - 4.0 * p_wallThickness)
-                    .cutBlind(-p_lipHeight)
-                )
-
-            elif p_jointType == "Butt Joint":
-                pass
 
             if p_invertLid:
-                lid = lid.rotateAboutCenter((1, 0, 0), 180)
+                topOfLid = topOfLid.rotateAboutCenter((1, 0, 0), 180)
 
-            result = lid.union(bottom)
+            result = topOfLid.union(bottom)
 
             self.signals.result_ready.emit(result)
         except Exception as e:
@@ -258,7 +237,7 @@ class BoxCAD(QMainWindow):
         # Show loader instantly
         self.viewer.browser.page().runJavaScript("window.showLoader();")
 
-        # Extract plain data from widgets (must stay on main thread)
+    # Extract plain data from widgets (must stay on main thread)
         params = {}
 
         for k, v in self.ui_builder.widgets.items():
@@ -321,7 +300,7 @@ class BoxCAD(QMainWindow):
         self._state = new_state
         self._update_ui_for_state()
 
-        self.print_to_console(f"State of the app was just changed to {str(new_state).lstrip("AppState.")} ({new_state})!", "state_change")
+        self.print_to_console(f"State of the app was just changed to {str(new_state).lstrip('AppState.')} ({new_state})!", "state_change")
 
     def _update_ui_for_state(self):
         if self._state == AppState.INITIALIZING:

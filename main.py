@@ -17,7 +17,6 @@ from qtpy.QtCore import Qt, QSize, QStandardPaths
 from qtpy.uic import loadUi
 import json
 from datetime import datetime, timezone
-import qdarktheme
 
 # Global app settings
 app_name = "BoxCAD"
@@ -232,7 +231,6 @@ class MainWindow(QMainWindow):
             self.ui.recentProjectsList.setItemWidget(list_item, widget)
 
 app = QApplication(sys.argv)
-qdarktheme.setup_theme() # Setup the dark theme
 
 QApplication.setOrganizationName("BoxCAD")
 QApplication.setApplicationName("BoxCAD")
