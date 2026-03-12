@@ -134,7 +134,7 @@
      <string>Create New Project</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnTutorials">
+   <widget class="QPushButton" name="btnDocs">
     <property name="geometry">
      <rect>
       <x>50</x>
@@ -144,7 +144,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Tutorials</string>
+     <string>Docs</string>
     </property>
    </widget>
    <widget class="QPushButton" name="btnExit">

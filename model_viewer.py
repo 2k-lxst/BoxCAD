@@ -89,12 +89,15 @@ class ModelViewer(QFrame):
         self.base_dir = get_bundle_dir()
         os.chdir(self.base_dir) # Server serves files from this folder
 
+        # Create the server
         self.httpd = socketserver.TCPServer(("", 0), QuietHandler) # 0 = Pick a free port
 
+        # Change the default printer to use the custom printer
         self.httpd.printer = self.print_to_console
 
         self.port = self.httpd.server_address[1]
 
+        # Host the website in another thread
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
         # Load the HTML file through the server
@@ -139,7 +142,7 @@ class ModelViewer(QFrame):
                 if (typeof window.updateMesh === 'function') {
                     window.updateMesh('%s');
                 } else {
-                    console.error('updateMesh not ready yet');
+                    console.error('updateMesh is not ready yet!');
                 }
             """ % url)
 

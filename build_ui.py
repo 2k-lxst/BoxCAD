@@ -4,7 +4,6 @@
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox, QCheckBox
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
-from ui.main_window_ui import Ui_MainWindow
 
 class BuildUI:
     def __init__(self):
@@ -426,8 +425,8 @@ class BuildUI:
                 old_widget.deleteLater()
 
             toolbox.addItem(self.build_dimensions_page(), "Dimensions")
-            toolbox.addItem(self.build_assembly_page(), "Lid && Joinery")
-            toolbox.addItem(self.build_bore_countersink_page(), "Bore && Countersink")
+            toolbox.addItem(self.build_assembly_page(), "Lid && Screwposts")
+            toolbox.addItem(self.build_bore_countersink_page(), "Counterbore && Countersink")
             toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
             toolbox.addItem(self.build_cutouts_page(), "Cutouts && Ports")
 

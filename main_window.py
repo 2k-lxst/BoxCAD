@@ -185,15 +185,21 @@ class GeometryTask(QtCore.QRunnable):
             self.signals.error_occurred.emit(str(e), "error")
 
 class BoxCAD(QMainWindow):
-    def __init__(self):
+    def __init__(self, project_path):
         super().__init__()
+
+        if project_path is None:
+            self.current_filename = "Untitled project"
+        else:
+            # If path is "C:/Users/You/Box1.json", this makes filename "Box1.json"
+            self.current_filename = os.path.basename(project_path)
 
         self._state = AppState.UNINITIALIZED
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.setWindowTitle("BoxCAD - Parametric Enclosure Engine")
+        self.setWindowTitle(f"BoxCAD - {self.current_filename}")
         self.resize(1200, 800)
 
         try:
@@ -237,7 +243,7 @@ class BoxCAD(QMainWindow):
         # Show loader instantly
         self.viewer.browser.page().runJavaScript("window.showLoader();")
 
-    # Extract plain data from widgets (must stay on main thread)
+        # Extract plain data from widgets (must stay on main thread)
         params = {}
 
         for k, v in self.ui_builder.widgets.items():
@@ -270,6 +276,7 @@ class BoxCAD(QMainWindow):
 
     def init_project(self):
         self.ui_builder.project_initialized = True
+        print("init_project: calling populate_toolbox")
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer)
         self.connect_ui_signals()
 
@@ -331,6 +338,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
-    window = BoxCAD()
+    window = BoxCAD(None)
     window.show()
     sys.exit(app.exec())

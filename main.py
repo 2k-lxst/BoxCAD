@@ -1,6 +1,8 @@
 # Pyright false positive due to dynamic PySide attributes
 # pyright: reportAttributeAccessIssue=false
 
+from PySide6.QtWebEngineWidgets import QWebEngineView  # Must be before QApplication
+
 import os
 import sys
 import platform
@@ -39,28 +41,29 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-# TODO: Update the recent files list by calling self.update_recent_files when user saves a newly-created file
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.set_taskbar_icon()
 
+        app_data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        os.makedirs(app_data_dir, exist_ok=True)
+
         # Compile paths
         # This approach works regardless of where you run the script
-        self.recent_file_path = os.path.join(data_dir, "recentFiles.json")
+        self.recent_file_path = os.path.join(app_data_dir, "recentFiles.json")
 
         script_dir = os.path.dirname(__file__)
         icon_path = os.path.join(script_dir, "assets", "icon.ico")
         welcome_screen_ui_path = resource_path("ui/welcome_screen.ui")
-        main_window_ui_path = resource_path("ui/main_window.ui")
 
+        # Load the UI
         self.ui = loadUi(welcome_screen_ui_path, self)
 
         self.ui.btnCreateProject.clicked.connect(self.create_new_project)
         self.ui.btnHardwareLibrary.clicked.connect(self.hardware_library)
-        self.ui.btnTutorials.clicked.connect(self.open_tutorials)
+        self.ui.btnDocs.clicked.connect(self.open_docs)
         self.ui.btnExit.clicked.connect(QApplication.quit)
 
         self.ui.recentProjectsList.itemClicked.connect(self.load_recent)
@@ -75,31 +78,44 @@ class MainWindow(QMainWindow):
             import pyi_splash # type: ignore
             pyi_splash.close()
         except ImportError: # This error happens if running in a development enviroment (IDE)
-            pass
+            pass # Don't do anything
 
     def set_taskbar_icon(self):
         # This tells Windows to treat this as a unique app otherwise it might show the default Python icon in the taskbar
         if os.name == "nt":
             import ctypes
 
-            myappid = f"2klxst.{app_name}.{app_name}.{app_version_number}"
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+            app_id = f"2klxst.{app_name}.{app_name}.{app_version_number}"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     # TODO: Finish the create new project functionality
     def create_new_project(self):
+
         print("'Create new project' button was clicked!")
         print("Switching to Workspace...")
 
+        try:
+            from main_window import BoxCAD
+
+            QApplication.instance().setStyle("Fusion") # type: ignore
+            self.workspace = BoxCAD(project_path=None)
+            self.workspace.show()
+            self.close() # Close the Welcome Screen
+        except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+            print(f"[CRASH]: {e}")
+
         # self.ui.stackedWidget.setCurrentIndex(1)
 
-    # TODO: Finish the open tutorials functionality
-    def open_tutorials(self):
+    def open_docs(self):
         import webbrowser
 
         print("'Open tutorials' button was clicked!")
         print("Opening tutorials in default browser...")
 
-        webbrowser.open("https://hackclub.com")
+        webbrowser.open("https://sites.google.com/view/boxcad-docs/home")
 
     # TODO: Finish the hardware library functionality
     def hardware_library(self):
@@ -223,25 +239,24 @@ class MainWindow(QMainWindow):
 
             widget.setLayout(layout)
 
-            # Store file path and it's display name the item (IMPORTANT!)
+            # Store file path and it's display name the item
             list_item.setData(Qt.UserRole, item["filePath"])
             list_item.setData(Qt.UserRole + 1, name_label.text()) # Store the item's display name in custom data
 
             self.ui.recentProjectsList.addItem(list_item)
             self.ui.recentProjectsList.setItemWidget(list_item, widget)
 
-app = QApplication(sys.argv)
+if __name__ == "__main__":
+    QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
-QApplication.setOrganizationName("BoxCAD")
-QApplication.setApplicationName("BoxCAD")
+    app = QApplication(sys.argv)
+    QApplication.setOrganizationName("BoxCAD")
+    QApplication.setApplicationName("BoxCAD")
 
-data_dir = QStandardPaths.writableLocation(
-    QStandardPaths.AppDataLocation
-)
+    data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+    os.makedirs(data_dir, exist_ok=True)
 
-os.makedirs(data_dir, exist_ok=True)
+    window = MainWindow()
+    window.show()
 
-window = MainWindow()
-window.show()
-
-app.exec()
+    app.exec()
