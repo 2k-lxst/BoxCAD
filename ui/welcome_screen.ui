@@ -124,8 +124,8 @@
    <widget class="QPushButton" name="btnCreateProject">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>194</y>
+      <x>50</x>
+      <y>169</y>
       <width>171</width>
       <height>41</height>
      </rect>
@@ -137,8 +137,8 @@
    <widget class="QPushButton" name="btnDocs">
     <property name="geometry">
      <rect>
-      <x>50</x>
-      <y>290</y>
+      <x>60</x>
+      <y>315</y>
       <width>151</width>
       <height>36</height>
      </rect>
@@ -150,8 +150,8 @@
    <widget class="QPushButton" name="btnExit">
     <property name="geometry">
      <rect>
-      <x>60</x>
-      <y>345</y>
+      <x>70</x>
+      <y>370</y>
       <width>131</width>
       <height>31</height>
      </rect>
@@ -163,8 +163,8 @@
    <widget class="QPushButton" name="btnHardwareLibrary">
     <property name="geometry">
      <rect>
-      <x>50</x>
-      <y>245</y>
+      <x>60</x>
+      <y>270</y>
       <width>151</width>
       <height>36</height>
      </rect>
@@ -224,14 +224,27 @@
    <widget class="Line" name="line">
     <property name="geometry">
      <rect>
-      <x>60</x>
-      <y>335</y>
+      <x>70</x>
+      <y>360</y>
       <width>131</width>
       <height>3</height>
      </rect>
     </property>
     <property name="orientation">
      <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnOpenProject">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>220</y>
+      <width>171</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open Project</string>
     </property>
    </widget>
   </widget>

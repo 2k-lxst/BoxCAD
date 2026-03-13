@@ -50,8 +50,7 @@ class BuildUI:
         )
 
         self.performance_warning = QLabel(
-            "<b>Note:</b> Initializing the 3D engine may take a few moments "
-            "depending on your hardware specifications."
+            "<b>Note:</b> Initializing the 3D engine and updating the screen to show the loading screen may take a few moments depending on your hardware specifications."
         )
 
         footer = QLabel(

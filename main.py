@@ -5,6 +5,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView  # Must be before QApplica
 
 import os
 import sys
+import json
 import platform
 from qtpy.QtWidgets import (
     QApplication,
@@ -12,12 +13,12 @@ from qtpy.QtWidgets import (
     QListWidgetItem,
     QWidget,
     QVBoxLayout,
-    QLabel
+    QLabel,
+    QFileDialog
 )
 from qtpy.QtGui import QIcon, QFont
 from qtpy.QtCore import Qt, QSize, QStandardPaths
 from qtpy.uic import loadUi
-import json
 from datetime import datetime, timezone
 
 # Global app settings
@@ -62,6 +63,7 @@ class MainWindow(QMainWindow):
         self.ui = loadUi(welcome_screen_ui_path, self)
 
         self.ui.btnCreateProject.clicked.connect(self.create_new_project)
+        self.ui.btnOpenProject.clicked.connect(self.open_project)
         self.ui.btnHardwareLibrary.clicked.connect(self.hardware_library)
         self.ui.btnDocs.clicked.connect(self.open_docs)
         self.ui.btnExit.clicked.connect(QApplication.quit)
@@ -88,9 +90,7 @@ class MainWindow(QMainWindow):
             app_id = f"2klxst.{app_name}.{app_name}.{app_version_number}"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
-    # TODO: Finish the create new project functionality
     def create_new_project(self):
-
         print("'Create new project' button was clicked!")
         print("Switching to Workspace...")
 
@@ -98,7 +98,8 @@ class MainWindow(QMainWindow):
             from main_window import BoxCAD
 
             QApplication.instance().setStyle("Fusion") # type: ignore
-            self.workspace = BoxCAD(project_path=None)
+
+            self.workspace = BoxCAD(project_path=None, app_version=app_version_number)
             self.workspace.show()
             self.close() # Close the Welcome Screen
         except Exception as e:
@@ -107,7 +108,29 @@ class MainWindow(QMainWindow):
             traceback.print_exc()
             print(f"[CRASH]: {e}")
 
-        # self.ui.stackedWidget.setCurrentIndex(1)
+    def open_project(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open Project",
+            "",
+            "BoxCAD Project (*.boxcad)"
+        )
+
+        if not path: # User cancelled
+            return
+
+        try:
+            from main_window import BoxCAD
+
+            QApplication.instance().setStyle("Fusion") # type: ignore
+
+            self.workspace = BoxCAD(project_path=path, app_version=app_version_number)
+            self.workspace.show()
+            self.close()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[CRASH]: {e}")
 
     def open_docs(self):
         import webbrowser

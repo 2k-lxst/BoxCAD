@@ -3,10 +3,14 @@
 
 import sys
 import os
+import json
+import webbrowser
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
 from qtpy import QtCore
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QFileDialog, QMessageBox
 
 # Qt shortcut aliases
 QtWidgets = PySide.QtWidgets
@@ -185,23 +189,65 @@ class GeometryTask(QtCore.QRunnable):
             self.signals.error_occurred.emit(str(e), "error")
 
 class BoxCAD(QMainWindow):
-    def __init__(self, project_path):
+    def __init__(self, project_path, app_version = "Unknown Version"):
         super().__init__()
+
+        self.app_version = app_version
+
+        self._history: list[dict] = []
+        self._history_index: int = -1
 
         if project_path is None:
             self.current_filename = "Untitled project"
+            self.current_filepath: str | None = None
         else:
             # If path is "C:/Users/You/Box1.json", this makes filename "Box1.json"
             self.current_filename = os.path.basename(project_path)
+            self.current_filepath = project_path
 
-        self._state = AppState.UNINITIALIZED
+        self._state = AppState.UNINITIALIZED # Set the starting application state
 
+        # Setup the UI
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        # Configure the window
         self.setWindowTitle(f"BoxCAD - {self.current_filename}")
+        self.mark_unsaved()
         self.resize(1200, 800)
 
+        # Create menu bar
+        menubar = self.menuBar()
+
+        # File menu
+        file_menu = menubar.addMenu("File")
+        self.action_new = file_menu.addAction("New Project", self.new_project, "Ctrl+N")
+        self.action_open = file_menu.addAction("Open Project", self.open_project, "Ctrl+O")
+        file_menu.addSeparator()
+        self.action_save = file_menu.addAction("Save", self.save_project, "Ctrl+S")
+        self.action_save_as = file_menu.addAction("Save As", self.save_project_as, "Ctrl+Shift+S")
+        file_menu.addSeparator()
+        file_menu.addAction("Exit", self.close, "Alt+F4")
+
+        # Edit menu
+        edit_menu = menubar.addMenu("Edit")
+        self.action_undo = edit_menu.addAction("Undo", self.undo, "Ctrl+Z")
+        self.action_redo = edit_menu.addAction("Redo", self.redo, "Ctrl+Y")
+
+        # Help menu
+        help_menu = menubar.addMenu("Help")
+        help_menu.addAction("Documentation", self.open_documentation)
+        help_menu.addAction("About BoxCAD", self.show_about)
+
+        # Disable until initialized
+        self.action_new.setEnabled(False)
+        self.action_open.setEnabled(False)
+        self.action_save.setEnabled(False)
+        self.action_save_as.setEnabled(False)
+        self.action_undo.setEnabled(False)
+        self.action_redo.setEnabled(False)
+
+        # Close the splash screen
         try:
             import pyi_splash # type: ignore
             pyi_splash.close()
@@ -234,8 +280,130 @@ class BoxCAD(QMainWindow):
         self.rebuild_timer.setInterval(200)
         self.rebuild_timer.timeout.connect(self.execute_thread_build)
 
+    def new_project(self):
+        # Reset file state
+        self.current_filepath = None
+        self.current_filename = "Untitled project"
+        self.mark_saved()
+
+        # Reset all widgets to their default values
+        for k, v in self.ui_builder.widgets.items():
+            if isinstance(v, (QtWidgets.QDoubleSpinBox, QtWidgets.QSpinBox)):
+                v.setValue(v.minimum())
+            elif isinstance(v, QtWidgets.QCheckBox):
+                v.setChecked(False)
+            elif isinstance(v, QtWidgets.QComboBox):
+                v.setCurrentIndex(0)
+            elif isinstance(v, QtWidgets.QPlainTextEdit):
+                v.setPlainText("")
+
+        self.rebuild_geometry()
+
+    def save_project_as(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Project As",
+            "",
+            "BoxCAD Project (*.boxcad)"
+        )
+
+        if not path: # User cancelled
+            return
+
+        self.current_filepath = path
+        self.current_filename = os.path.basename(path)
+        self.mark_saved()
+        self.save_project()
+
+    def _apply_snapshot(self, data):
+        for k, v in data.items():
+            if k not in self.ui_builder.widgets:
+                continue
+
+            widget = self.ui_builder.widgets[k]
+
+            # Block signals to avoid triggering rebuild/snapshot while restoring
+            widget.blockSignals(True)
+            if hasattr(widget, 'setValue') and isinstance(v, (int, float)):
+                widget.setValue(v)
+            elif hasattr(widget, 'setChecked') and isinstance(v, bool):
+                widget.setChecked(v)
+            elif hasattr(widget, 'setCurrentText') and isinstance(v, str):
+                widget.setCurrentText(v)
+            elif hasattr(widget, 'setPlainText') and isinstance(v, str):
+                widget.setPlainText(v)
+
+            widget.blockSignals(False)
+
+        self.rebuild_timer.start()
+
+    def undo(self):
+        if self._history_index <= 0:
+            self.print_to_console("Nothing to undo.", "warning")
+            return
+
+        self._history_index -= 1
+        self._apply_snapshot(self._history[self._history_index])
+
+    def redo(self):
+        if self._history_index >= len(self._history) - 1:
+            self.print_to_console("Nothing to redo.", "warning")
+            return
+
+        self._history_index += 1
+        self._apply_snapshot(self._history[self._history_index])
+
+    def open_documentation(self):
+        webbrowser.open("https://sites.google.com/view/boxcad-docs/home")
+
+    def show_about(self):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("About BoxCAD")
+        msg.setTextFormat(Qt.RichText)
+        msg.setText(
+            "<h2 style='margin-bottom: 4px;'>BoxCAD</h2>"
+            "<p style='color: #888888; margin-top: 0px;'><i>A Parametric Enclosure Designer for Makers</i></p>"
+            "<hr>"
+            "<p>"
+            "BoxCAD is a lightweight, Python-powered desktop application for designing "
+            "custom, 3D-printable project enclosures. Instead of manually modeling simple "
+            "boxes in CAD software, you define dimensions and hardware presets, preview "
+            "the result in real time, and export directly for manufacturing."
+            "</p>"
+            "<p>"
+            "The goal is <b>speed</b>, <b>repeatability</b>, and <b>clean parametric control</b> "
+            "— especially for electronics projects."
+            "</p>"
+            "<hr>"
+            f"<p style='color: #888888; font-size: 11px;'>v{self.app_version} &nbsp;·&nbsp; Made with ❤️ in Slovenia</p>"
+        )
+
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.button(QMessageBox.Ok).setText("Close")
+        msg.exec()
+
+    def _take_snapshot(self):
+        data = {}
+
+        for k, v in self.ui_builder.widgets.items():
+            if hasattr(v, 'value'):
+                data[k] = v.value()
+            elif hasattr(v, 'isChecked'):
+                data[k] = v.isChecked()
+            elif hasattr(v, 'currentText'):
+                data[k] = v.currentText()
+            elif hasattr(v, 'toPlainText'):
+                data[k] = v.toPlainText()
+
+        # Discard any redo history beyond current index
+        self._history = self._history[:self._history_index + 1]
+        self._history.append(data)
+        self._history_index += 1
+
     def rebuild_geometry(self):
         """Called by UI signals. Just restarts the timer."""
+        self.mark_unsaved()
+        self._take_snapshot()
         self.rebuild_timer.start()
 
     def execute_thread_build(self):
@@ -264,6 +432,112 @@ class BoxCAD(QMainWindow):
         # Dispatch to the pool
         self.thread_pool.start(task)
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_S and event.modifiers() == QtCore.Qt.ControlModifier:
+            self.save_project()
+        elif event.key() == QtCore.Qt.Key_O and event.modifiers() == QtCore.Qt.ControlModifier:
+            self.open_project()
+        else:
+            super().keyPressEvent(event)
+
+    def save_project(self):
+        if self.current_filename == "Untitled project":
+            # No file yet - prompt to save location
+            path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save Project",
+                "",
+                "BoxCAD Project (*.boxcad)"
+            )
+
+            if not path: # User cancelled
+                return
+
+            self.current_filename = os.path.basename(path)
+            self.current_filepath = path
+            self.setWindowTitle(f"BoxCAD - {self.current_filename}")
+        else:
+            path = self.current_filepath
+
+        # Collect all widget values
+        data = {}
+        for k, v in self.ui_builder.widgets.items():
+            if hasattr(v, 'value'):
+                data[k] = v.value()
+            elif hasattr(v, 'isChecked'):
+                data[k] = v.isChecked()
+            elif hasattr(v, 'currentText'):
+                data[k] = v.currentText()
+            elif hasattr(v, 'toPlainText'):
+                data[k] = v.toPlainText()
+
+        with open(path, 'w') as f: # type: ignore
+            json.dump(data, f, indent=4)
+            self.print_to_console(f"Project saved to {path}", "success")
+            self.mark_saved()
+
+    def open_project(self, path: str | None = None):
+        if path is None:
+            from qtpy.QtWidgets import QFileDialog
+
+            path, _ = QFileDialog.getOpenFileName(
+                self,
+                "Open Project",
+                "",
+                "BoxCAD Project (*.boxcad)"
+            )
+
+            if not path: # User cancelled
+                return
+
+        try:
+            with open(path, 'r') as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            self.print_to_console(f"Failed to open project: {e}", "error")
+
+            return
+
+        # Update all widgets with the loaded values
+        for k, v in data.items():
+            if k not in self.ui_builder.widgets:
+                continue
+
+            widget = self.ui_builder.widgets[k]
+
+            if hasattr(widget, 'setValue') and isinstance(v, (int, float)):
+                widget.setValue(v)
+            elif hasattr(widget, 'setChecked') and isinstance(v, bool):
+                widget.setChecked(v)
+            elif hasattr(widget, 'setCurrentText') and isinstance(v, str):
+                widget.setCurrentText(v)
+            elif hasattr(widget, 'setPlainText') and isinstance(v, str):
+                widget.setPlainText(v)
+
+        # Update state
+        self.current_filepath = path
+        self.current_filename = os.path.basename(path)
+        self.setWindowTitle(f"BoxCAD - {self.current_filename}")
+
+        self.print_to_console(f"Project loaded from {path}", "success")
+
+        # Trigger a rebuild with the loaded values
+        self.rebuild_geometry()
+
+        self.mark_saved()
+
+    def mark_unsaved(self):
+        title = self.windowTitle()
+
+        if not title.endswith("*"):
+            self.setWindowTitle(title + " *")
+
+    def mark_saved(self):
+        title = self.windowTitle()
+
+        if title.endswith("*"):
+            self.setWindowTitle(title[:-2])
+
     def on_render_success(self, result):
         """Update 3D viewer and hide loader"""
         self.viewer.update_display(result)
@@ -276,14 +550,23 @@ class BoxCAD(QMainWindow):
 
     def init_project(self):
         self.ui_builder.project_initialized = True
-        print("init_project: calling populate_toolbox")
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer)
         self.connect_ui_signals()
 
-        self.rebuild_geometry()
+        # Enable menu actions now that project is ready
+        self.action_new.setEnabled(True)
+        self.action_open.setEnabled(True)
+        self.action_save.setEnabled(True)
+        self.action_save_as.setEnabled(True)
+        self.action_undo.setEnabled(True)
+        self.action_redo.setEnabled(True)
+
+        if self.current_filepath is not None:
+            self.open_project(self.current_filepath)
+        else:
+            self.rebuild_geometry()
 
         self.set_state(AppState.READY)
-
         self.print_to_console("Project initialized!", "success")
 
     def connect_ui_signals(self):
@@ -338,6 +621,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
-    window = BoxCAD(None)
+    window = BoxCAD(project_path=None)
     window.show()
     sys.exit(app.exec())
