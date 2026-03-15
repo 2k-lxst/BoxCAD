@@ -5,6 +5,8 @@ import sys
 import os
 import json
 import webbrowser
+import platform
+import subprocess
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
@@ -27,13 +29,15 @@ from ui.main_window_ui import Ui_MainWindow
 from build_ui import BuildUI
 from enum import Enum, auto
 
-# TODO: Implement listeners for all values
-
 class AppState(Enum):
     UNINITIALIZED = auto()
     INITIALIZING = auto()
     READY = auto()
     ERROR = auto()
+
+class ExportFormat(Enum):
+    STL = auto()
+    STEP = auto()
 
 def resource_path(relative_path):
     """Get the absolute path to resource, works for developement enviroment and PyInstaller."""
@@ -192,6 +196,9 @@ class BoxCAD(QMainWindow):
     def __init__(self, project_path, app_version = "Unknown Version"):
         super().__init__()
 
+        self.last_result = None
+        self._loading = False
+
         self.app_version = app_version
 
         self._history: list[dict] = []
@@ -234,6 +241,11 @@ class BoxCAD(QMainWindow):
         self.action_undo = edit_menu.addAction("Undo", self.undo, "Ctrl+Z")
         self.action_redo = edit_menu.addAction("Redo", self.redo, "Ctrl+Y")
 
+        # Export menu
+        export_menu = menubar.addMenu("Export")
+        self.action_export_stl = export_menu.addAction("Export as STL", lambda: self.export(ExportFormat.STL), "Ctrl+E")
+        self.action_export_step = export_menu.addAction("Export as STEP", lambda: self.export(ExportFormat.STEP), "Ctrl+Shift+E")
+
         # Help menu
         help_menu = menubar.addMenu("Help")
         help_menu.addAction("Documentation", self.open_documentation)
@@ -246,12 +258,14 @@ class BoxCAD(QMainWindow):
         self.action_save_as.setEnabled(False)
         self.action_undo.setEnabled(False)
         self.action_redo.setEnabled(False)
+        self.action_export_step.setEnabled(False)
+        self.action_export_stl.setEnabled(False)
 
         # Close the splash screen
         try:
             import pyi_splash # type: ignore
             pyi_splash.close()
-        except ImportError:  # This error happens if running in a development enviroment (IDE)
+        except ImportError: # This error happens if running in a development enviroment (IDE)
             pass
 
         # Initialize components
@@ -455,7 +469,8 @@ class BoxCAD(QMainWindow):
 
             self.current_filename = os.path.basename(path)
             self.current_filepath = path
-            self.setWindowTitle(f"BoxCAD - {self.current_filename}")
+
+            self.mark_saved()
         else:
             path = self.current_filepath
 
@@ -477,6 +492,8 @@ class BoxCAD(QMainWindow):
             self.mark_saved()
 
     def open_project(self, path: str | None = None):
+        self._loading = True
+
         if path is None:
             from qtpy.QtWidgets import QFileDialog
 
@@ -517,7 +534,8 @@ class BoxCAD(QMainWindow):
         # Update state
         self.current_filepath = path
         self.current_filename = os.path.basename(path)
-        self.setWindowTitle(f"BoxCAD - {self.current_filename}")
+
+        self._loading = False
 
         self.print_to_console(f"Project loaded from {path}", "success")
 
@@ -526,7 +544,68 @@ class BoxCAD(QMainWindow):
 
         self.mark_saved()
 
+    def export(self, format):
+        if self.last_result is None:
+            self.print_to_console("Nothing to export yet!", "warning")
+
+            return
+
+        if format == ExportFormat.STEP:
+            file_filter = "STEP Files (*.step)"
+            extension = ".step"
+        elif format == ExportFormat.STL:
+            file_filter = "STL Files (*.stl)"
+            extension = ".stl"
+        else: # Prevent PyLance errors
+            file_filter = ""
+            extension = ""
+
+        default_name = os.path.splitext(self.current_filename)[0] + extension
+
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            f"Export as {format.name}",
+            default_name,
+            file_filter
+        )
+
+        if not path: # User cancelled
+            return
+
+        try:
+            if format == ExportFormat.STL:
+                cq.exporters.export(self.last_result, path)
+            elif format == ExportFormat.STEP:
+                cq.exporters.export(self.last_result, path)
+
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Export Successful")
+            msg.setText(f"<b>{os.path.basename(path)}</b> was exported successfully.")
+            msg.setInformativeText(f"Format: {format.name}\nLocation: {os.path.dirname(path)}")
+
+            open_folder_btn = msg.addButton("Open Folder", QMessageBox.ActionRole)
+            msg.addButton("Close", QMessageBox.AcceptRole)
+
+            msg.exec()
+
+            if msg.clickedButton() == open_folder_btn:
+                folder = os.path.dirname(path)
+
+                if platform.system() == "Windows": # Windows
+                    subprocess.Popen(f'explorer /select,"{path.replace("/", "\\")}"')
+                elif platform.system() == "Darwin": # Mac
+                    subprocess.Popen(["open", "-R", path])
+                else: # Linux
+                    subprocess.Popen(["xdg-open", folder])
+
+            self.print_to_console(f"Exported {format.name} to {path}", "success")
+        except Exception as e:
+            self.print_to_console(f"Export failed: {e}", "error")
+
     def mark_unsaved(self):
+        if self._loading: return
+
         title = self.windowTitle()
 
         if not title.endswith("*"):
@@ -540,6 +619,7 @@ class BoxCAD(QMainWindow):
 
     def on_render_success(self, result):
         """Update 3D viewer and hide loader"""
+        self.last_result = result
         self.viewer.update_display(result)
         self.viewer.browser.page().runJavaScript("window.hideLoader();")
 
@@ -560,6 +640,8 @@ class BoxCAD(QMainWindow):
         self.action_save_as.setEnabled(True)
         self.action_undo.setEnabled(True)
         self.action_redo.setEnabled(True)
+        self.action_export_stl.setEnabled(True)
+        self.action_export_step.setEnabled(True)
 
         if self.current_filepath is not None:
             self.open_project(self.current_filepath)
@@ -568,6 +650,27 @@ class BoxCAD(QMainWindow):
 
         self.set_state(AppState.READY)
         self.print_to_console("Project initialized!", "success")
+
+    def closeEvent(self, event):
+        if self._state == AppState.READY and self.windowTitle().endswith(" *"):
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Unsaved Changes")
+            msg.setText("<b>You have unsaved changes.</b>")
+            msg.setInformativeText("Do you want to save before closing?")
+            msg.setStandardButtons(QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+            msg.setDefaultButton(QMessageBox.Save)
+
+            result = msg.exec()
+
+            if result == QMessageBox.Save:
+                self.save_project()
+                event.accept()
+            elif result == QMessageBox.Discard:
+                event.accept()
+            elif result == QMessageBox.Cancel:
+                event.ignore() # Cancels the close
+        else:
+            event.accept()
 
     def connect_ui_signals(self):
         for key, widget in self.ui_builder.widgets.items():
@@ -622,5 +725,5 @@ if __name__ == "__main__":
     app.setStyle("Fusion")
 
     window = BoxCAD(project_path=None)
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())

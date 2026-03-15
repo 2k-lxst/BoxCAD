@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
         self.ui.btnDocs.clicked.connect(self.open_docs)
         self.ui.btnExit.clicked.connect(QApplication.quit)
 
-        self.ui.recentProjectsList.itemClicked.connect(self.load_recent)
+        self.ui.recentProjectsList.itemDoubleClicked.connect(self.load_recent)
 
         # Set the window's title and icon
         self.setWindowTitle(f"{app_name} v{app_version_number}")
@@ -91,24 +91,27 @@ class MainWindow(QMainWindow):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     def create_new_project(self):
-        print("'Create new project' button was clicked!")
-        print("Switching to Workspace...")
+        self.print_to_console("'Create New Project' button was clicked!", "info")
 
         try:
             from main_window import BoxCAD
 
+            self.print_to_console("Switching to Workspace...", "info")
+
             QApplication.instance().setStyle("Fusion") # type: ignore
 
             self.workspace = BoxCAD(project_path=None, app_version=app_version_number)
-            self.workspace.show()
+            self.workspace.showMaximized()
             self.close() # Close the Welcome Screen
         except Exception as e:
             import traceback
 
             traceback.print_exc()
-            print(f"[CRASH]: {e}")
+            self.print_to_console(f"CRASH: {e}", "error")
 
     def open_project(self):
+        self.print_to_console("'Open Project' button was clicked!", "info")
+
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Open Project",
@@ -122,38 +125,56 @@ class MainWindow(QMainWindow):
         try:
             from main_window import BoxCAD
 
+            self.print_to_console("Switching to Workspace...", "info")
+
             QApplication.instance().setStyle("Fusion") # type: ignore
 
             self.workspace = BoxCAD(project_path=path, app_version=app_version_number)
-            self.workspace.show()
+            self.update_recent_files(path)
+            self.workspace.showMaximized()
             self.close()
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f"[CRASH]: {e}")
+            self.print_to_console(f"CRASH: {e}", "error")
 
     def open_docs(self):
         import webbrowser
 
-        print("'Open tutorials' button was clicked!")
-        print("Opening tutorials in default browser...")
+        self.print_to_console("'Open Docs' button was clicked!", "info")
+        self.print_to_console("Opening docs in default browser...", "info")
 
         webbrowser.open("https://sites.google.com/view/boxcad-docs/home")
 
     # TODO: Finish the hardware library functionality
     def hardware_library(self):
-        print("'Hardware library' button was clicked!")
-        print("Switching to Workspace...")
+        self.print_to_console("'Hardware Library' button was clicked!", "info")
+        self.print_to_console("Switching to Workspace...", "info")
 
-        # self.ui.stackedWidget.setCurrentIndex(1)
-
-    # TODO: Finish the load recent functionality
     def load_recent(self, item):
-        print("A recent project from the list was clicked!")
-        print(f"Loading: {item.data(Qt.UserRole + 1)}") # Get the item's display name
-        print("Switching to Workspace...")
+        self.print_to_console(f"Trying to load: {item.data(Qt.UserRole + 1)}", "info")
 
-        # self.ui.stackedWidget.setCurrentIndex(1)
+        path = item.data(Qt.UserRole)
+
+        if not os.path.exists(path):
+            self.print_to_console("The requested file doesn't exist!", "error")
+            return
+
+        try:
+            from main_window import BoxCAD
+
+            self.print_to_console("Switching to Workspace...", "info")
+
+            QApplication.instance().setStyle("Fusion") # type: ignore
+
+            self.workspace = BoxCAD(project_path=path, app_version=app_version_number)
+            self.update_recent_files(path)
+            self.workspace.showMaximized()
+            self.close()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.print_to_console(f"CRASH: {e}", "error")
 
     def load_recent_files(self):
         # Load the recentFiles.json file safely. If it doesn't exist, create it.
@@ -161,7 +182,7 @@ class MainWindow(QMainWindow):
             with open(self.recent_file_path, "w") as file:
                 json.dump([], file)
 
-            print("The recentFiles.json doesn't exist. It was created automatically.")
+            self.print_to_console("The recentFiles.json doesn't exist. It was created automatically.", "warning")
 
             return []
 
@@ -169,7 +190,7 @@ class MainWindow(QMainWindow):
             with open(self.recent_file_path, "r") as file:
                 return json.load(file)
         except json.JSONDecodeError:
-            print("The recentFiles.json file is corrupted!")
+            self.print_to_console("The recentFiles.json file is empty or corrupted!", "error")
 
             return []
 
@@ -269,10 +290,20 @@ class MainWindow(QMainWindow):
             self.ui.recentProjectsList.addItem(list_item)
             self.ui.recentProjectsList.setItemWidget(list_item, widget)
 
+    def print_to_console(self, message = "No message was provided!", type = "info"):
+        from termcolor import colored
+
+        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey", "state_change": "magenta"}
+
+        color = colors.get(type, "white")
+
+        print(colored(f"[{type.replace("_", " ").upper()}] {message}", color))
+
 if __name__ == "__main__":
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
     QApplication.setOrganizationName("BoxCAD")
     QApplication.setApplicationName("BoxCAD")
 

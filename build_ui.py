@@ -31,7 +31,6 @@ class BuildUI:
 
     # TODO: Add explainer tooltips to all parameters
     # TODO: Add comments above each parameter to explain what the parameter does
-    # TODO: Update the background color of the checkboxes
 
     def build_welcome_page(self, viewer):
         """Creates the landing page for the toolbox."""
@@ -45,6 +44,7 @@ class BuildUI:
         explainer = QLabel(
             "<h1><b>Welcome to BoxCAD!</b></h1><hr>"
             "BoxCAD is a high-fidelity parametric engine designed to bridge the critical gap between internal electronic component architectures and their external physical protection, utilizing logic-driven geometry to automate the path from circuit design to precision-engineered chassis.<hr>"
+            "To open an existing project, first initialize the engine, then press <b>CTRL + O</b> or head up to <b>File > Open Project</b><hr>"
             "To begin your design, click the button below!<br><br>"
             "<i>This will unlock all editing tools</i>"
         )
