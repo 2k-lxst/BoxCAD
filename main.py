@@ -17,7 +17,7 @@ from qtpy.QtWidgets import (
     QFileDialog
 )
 from qtpy.QtGui import QIcon, QFont
-from qtpy.QtCore import Qt, QSize, QStandardPaths
+from qtpy.QtCore import Qt, QSize, QStandardPaths, QTimer
 from qtpy.uic import loadUi
 from datetime import datetime, timezone
 
@@ -92,22 +92,37 @@ class MainWindow(QMainWindow):
 
     def create_new_project(self):
         self.print_to_console("'Create New Project' button was clicked!", "info")
+        self.ui.progressBar.setValue(0)
+        self.ui.progressBar.setFormat("Initializing...")
 
+        QTimer.singleShot(100, self._launch_new_project)
+
+    def _launch_new_project(self):
         try:
+            self.ui.progressBar.setValue(30)
+            self.ui.progressBar.setFormat("Loading workspace...")
+
             from main_window import BoxCAD
 
-            self.print_to_console("Switching to Workspace...", "info")
+            self.ui.progressBar.setValue(60)
+            self.ui.progressBar.setFormat("Starting 3D engine...")
 
-            QApplication.instance().setStyle("Fusion") # type: ignore
-
+            QApplication.instance().setStyle("Fusion")  # type: ignore
             self.workspace = BoxCAD(project_path=None, app_version=app_version_number)
-            self.workspace.showMaximized()
-            self.close() # Close the Welcome Screen
+
+            self.ui.progressBar.setValue(100)
+            self.ui.progressBar.setFormat("Done!")
+
+            QTimer.singleShot(300, self._show_workspace)
         except Exception as e:
             import traceback
-
             traceback.print_exc()
             self.print_to_console(f"CRASH: {e}", "error")
+            self.ui.progressBar.setVisible(False)
+
+    def _show_workspace(self):
+        self.workspace.showMaximized()
+        self.close()
 
     def open_project(self):
         self.print_to_console("'Open Project' button was clicked!", "info")
@@ -122,21 +137,37 @@ class MainWindow(QMainWindow):
         if not path: # User cancelled
             return
 
+        self._pending_project_path = path
+
+        self.ui.progressBar.setVisible(True)
+        self.ui.progressBar.setValue(0)
+        self.ui.progressBar.setFormat("Initializing...")
+
+        QTimer.singleShot(100, self._launch_open_project)
+
+    def _launch_open_project(self):
         try:
+            self.ui.progressBar.setValue(30)
+            self.ui.progressBar.setFormat("Loading workspace...")
+
             from main_window import BoxCAD
 
-            self.print_to_console("Switching to Workspace...", "info")
+            self.ui.progressBar.setValue(60)
+            self.ui.progressBar.setFormat("Starting 3D engine...")
 
-            QApplication.instance().setStyle("Fusion") # type: ignore
+            QApplication.instance().setStyle("Fusion")  # type: ignore
+            self.workspace = BoxCAD(project_path=self._pending_project_path, app_version=app_version_number)
+            self.update_recent_files(self._pending_project_path)
 
-            self.workspace = BoxCAD(project_path=path, app_version=app_version_number)
-            self.update_recent_files(path)
-            self.workspace.showMaximized()
-            self.close()
+            self.ui.progressBar.setValue(100)
+            self.ui.progressBar.setFormat("Done!")
+
+            QTimer.singleShot(300, self._show_workspace)
         except Exception as e:
             import traceback
             traceback.print_exc()
             self.print_to_console(f"CRASH: {e}", "error")
+            self.ui.progressBar.setVisible(False)
 
     def open_docs(self):
         import webbrowser

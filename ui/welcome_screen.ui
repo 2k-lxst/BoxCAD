@@ -99,28 +99,6 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="labelProgressBar">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>445</y>
-      <width>81</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>Inter 18pt</family>
-      <pointsize>9</pointsize>
-      <weight>50</weight>
-      <italic>false</italic>
-      <bold>false</bold>
-     </font>
-    </property>
-    <property name="text">
-     <string>Initializing...</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="btnCreateProject">
     <property name="geometry">
      <rect>
@@ -209,16 +187,19 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>470</y>
+      <y>465</y>
       <width>530</width>
-      <height>20</height>
+      <height>25</height>
      </rect>
     </property>
     <property name="value">
-     <number>24</number>
+     <number>0</number>
     </property>
     <property name="textVisible">
-     <bool>false</bool>
+     <bool>true</bool>
+    </property>
+    <property name="format">
+     <string>Ready</string>
     </property>
    </widget>
    <widget class="Line" name="line">

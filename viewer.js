@@ -347,7 +347,7 @@ scene.add(dirLight);
 // size2 = 1  (A minor line every 1mm)
 const grid = new InfiniteGridHelper(10, 1, new THREE.Color(0xffffff), 1000);
 grid.rotation.x = Math.PI / 2; // Rotate the grid by 90 degrees (PI / 2 radians)
-grid.position.z = -0.001; // Tiny offset to prevent "Z-fighting" (flickering) with the model floor
+grid.position.z = -0.1; // Tiny offset to prevent "Z-fighting" (flickering) with the model floor
 
 scene.add(grid);
 
