@@ -381,7 +381,7 @@ class BoxCAD(QMainWindow):
             "<p>"
             "BoxCAD is a lightweight, Python-powered desktop application for designing "
             "custom, 3D-printable project enclosures. Instead of manually modeling simple "
-            "boxes in CAD software, you define dimensions and hardware presets, preview "
+            "boxes in CAD software, you define dimensions, preview "
             "the result in real time, and export directly for manufacturing."
             "</p>"
             "<p>"
