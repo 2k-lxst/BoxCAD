@@ -1,7 +1,7 @@
 # Pyright false positive due to dynamic PySide attributes
 # pyright: reportAttributeAccessIssue=false
 
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox, QCheckBox
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox, QCheckBox, QMessageBox
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QFont
 
@@ -9,8 +9,12 @@ class BuildUI:
     def __init__(self):
         super().__init__()
 
-        # Dictionary to store references to widgets for easy access later
+        # Define the rebuild callback to call later
+        self.rebuild_callback = None
+
+        # Dictionaries to store references to widgets and cutouts for easy access later
         self.widgets = {}
+        self.cutouts = []
 
         # Bool to describe if the project is initialized yet
         self.project_initialized = False
@@ -327,17 +331,37 @@ class BuildUI:
         self.cutout_shape = QComboBox()
         self.cutout_shape.addItems(["Rectangle", "Circle"])
 
+        self.cutout_width = QDoubleSpinBox()
+        self.cutout_width.setRange(1, 200)
+        self.cutout_width.setSuffix(" mm")
+
+        self.cutout_height = QDoubleSpinBox()
+        self.cutout_height.setRange(1, 200)
+        self.cutout_height.setSuffix(" mm")
+
+        self.cutout_diameter = QDoubleSpinBox()
+        self.cutout_diameter.setRange(1, 200)
+        self.cutout_diameter.setSuffix(" mm")
+
         self.cutout_x = QDoubleSpinBox()
+        self.cutout_x.setMaximum(200)
+        self.cutout_x.setSuffix(" mm")
+
         self.cutout_y = QDoubleSpinBox()
+        self.cutout_x.setMaximum(200)
+        self.cutout_y.setSuffix(" mm")
 
         # Add items to the creator form
         creator_layout.addRow("Target Face:", self.cutout_face)
         creator_layout.addRow("Shape:", self.cutout_shape)
-        creator_layout.addRow("X:", self.cutout_x)
-        creator_layout.addRow("Y:", self.cutout_y)
+        creator_layout.addRow("Width:", self.cutout_width)
+        creator_layout.addRow("Height", self.cutout_height)
+        creator_layout.addRow("Diameter (circle only)", self.cutout_diameter)
+        creator_layout.addRow("Horizontal Offset:", self.cutout_x)
+        creator_layout.addRow("Vertical Offset:", self.cutout_y)
 
         self.add_cutout_btn = QPushButton("Add Cutout to List")
-        # self.add_cutout_btn.clicked.connect(self.add_cutout_action)
+        self.add_cutout_btn.clicked.connect(self.add_cutout)
 
         creator_layout.addRow(self.add_cutout_btn)
 
@@ -381,6 +405,61 @@ class BuildUI:
         self.add_vertical_spacer(layout)
 
         return page
+
+    def add_cutout(self):
+        cutout = {
+            "face": self.cutout_face.currentText(),
+            "shape": self.cutout_shape.currentText(),
+            "x": self.cutout_x.value(),
+            "y": self.cutout_y.value(),
+            "width": self.cutout_width.value(),
+            "height": self.cutout_height.value(),
+            "diameter": self.cutout_diameter.value()
+        }
+
+        self.cutouts.append(cutout)
+        self._add_cutout_to_list(cutout)
+        self.refresh_empty_state()
+
+    def _add_cutout_to_list(self, cutout: dict):
+        row_widget = QWidget()
+        row_layout = QHBoxLayout(row_widget)
+        row_layout.setContentsMargins(4, 2, 4, 2)
+
+        if cutout["shape"] == "Circle":
+            label_text = f"Circle on {cutout["face"]} | ⌀{cutout['diameter']}mm @ ({cutout["x"]}, {cutout["y"]})"
+        else:
+            label_text = f"Rectangle on {cutout["face"]} | {cutout["width"]}x{cutout["height"]}mm @ ({cutout["x"]}, {cutout["y"]})"
+
+        label = QLabel(label_text)
+        label.setWordWrap(True)
+
+        delete_btn = QPushButton("✕")
+        delete_btn.setFixedWidth(30)
+        delete_btn.setToolTip("Remove this cutout")
+
+        def on_delete():
+            msg = QMessageBox()
+            msg.setWindowTitle("Remove Cutout")
+            msg.setIcon(QMessageBox.Icon.Question)
+            msg.setText("Are you sure you want to remove this cutout?")
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.No)
+
+            if msg.exec() == QMessageBox.Yes:
+                self.cutouts.remove(cutout)
+                self.manager_layout.removeWidget(row_widget)
+                row_widget.deleteLater()
+                self.refresh_empty_state()
+
+                if self.rebuild_callback: self.rebuild_callback()
+
+        delete_btn.clicked.connect(on_delete)
+
+        row_layout.addWidget(label)
+        row_layout.addWidget(delete_btn)
+
+        self.manager_layout.addWidget(row_widget)
 
     def add_vertical_spacer(self, layout):
         """Helper to push widgets to the top of the form."""

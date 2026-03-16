@@ -74,6 +74,8 @@ class GeometryTask(QtCore.QRunnable):
             p_edgeRounding = p["edge_rounding"]
 
             p_holeType = p["hole_type"]
+            p_invertLid = p["invert_lid"]
+            p_lipHeight = p["lip_height"]
             p_screwpostInset = p["screwpost_inset"]
             p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
             p_screwpostOuterDiameter = p["screwpost_outer_diameter"]
@@ -83,8 +85,7 @@ class GeometryTask(QtCore.QRunnable):
             p_countersinkDiameter = p["countersink_diameter"]
             p_countersinkAngle = p["countersink_angle"]
 
-            p_invertLid = p["invert_lid"]
-            p_lipHeight = p["lip_height"]
+            p_cutouts = p["cutouts"]
 
             outer_shell = (
                 cq.Workplane("XY")
@@ -131,6 +132,37 @@ class GeometryTask(QtCore.QRunnable):
 
             box = outer_shell.cut(inner_shell)
 
+            mapping = {
+                "Left (-X)": "<X",
+                "Right (+X)": ">X",
+                "Front (-Y)": "<Y",
+                "Back (+Y)": ">Y",
+                "Bottom (-Z)": "<Z",
+                "Top (+Z)": ">Z"
+            }
+
+            for cutout in p["cutouts"]:
+                face_selector = mapping.get(cutout["face"], ">Z")
+                try:
+                    if cutout["shape"] == "Rectangle":
+                        box = (
+                            box.faces(face_selector)
+                            .workplane()
+                            .center(cutout["x"], cutout["y"])
+                            .rect(cutout["width"], cutout["height"])
+                            .cutBlind(-100)
+                        )
+                    elif cutout["shape"] == "Circle":
+                        box = (
+                            box.faces(face_selector)
+                            .workplane()
+                            .center(cutout["x"], cutout["y"])
+                            .circle(cutout["diameter"] / 2)
+                            .cutBlind(-100)
+                        )
+                except Exception as e:
+                    self.signals.error_occurred.emit(f"Cutout failed on {cutout["face"]}: {e}", "warning")
+
             screwpost_width = p_outerWidth - 2.0 * p_screwpostInset
             screwpost_length = p_outerLength - 2.0 * p_screwpostInset
 
@@ -158,7 +190,7 @@ class GeometryTask(QtCore.QRunnable):
 
             screwHoleCenters = (
                 cutLip.faces(">Z")
-                .workplane(centerOption="CenterOfMass")
+                .workplane()
                 .rect(screwpost_width, screwpost_length, forConstruction=True)
                 .vertices()
             )
@@ -429,14 +461,16 @@ class BoxCAD(QMainWindow):
         params = {}
 
         for k, v in self.ui_builder.widgets.items():
-            if hasattr(v, 'value'): # QDoubleSpinBox / QSpinBox
+            if hasattr(v, "value"): # QDoubleSpinBox / QSpinBox
                 params[k] = v.value()
-            elif hasattr(v, 'isChecked'): # QCheckBox
+            elif hasattr(v, "isChecked"): # QCheckBox
                 params[k] = v.isChecked()
-            elif hasattr(v, 'currentText'): # QComboBox
+            elif hasattr(v, "currentText"): # QComboBox
                 params[k] = v.currentText()
-            elif hasattr(v, 'toPlainText'): # QPlainTextEdit (for coordinates)
+            elif hasattr(v, "toPlainText"): # QPlainTextEdit (for coordinates)
                 params[k] = v.toPlainText()
+
+        params["cutouts"] = self.ui_builder.cutouts
 
         # Create and connect the task
         task = GeometryTask(params)
@@ -486,17 +520,17 @@ class BoxCAD(QMainWindow):
             elif hasattr(v, 'toPlainText'):
                 data[k] = v.toPlainText()
 
+        data["cutouts"] = self.ui_builder.cutouts
+
         with open(path, 'w') as f: # type: ignore
             json.dump(data, f, indent=4)
-            self.print_to_console(f"Project saved to {path}", "success")
             self.mark_saved()
+            self.print_to_console(f"Project saved to {path}", "success")
 
     def open_project(self, path: str | None = None):
         self._loading = True
 
         if path is None:
-            from qtpy.QtWidgets import QFileDialog
-
             path, _ = QFileDialog.getOpenFileName(
                 self,
                 "Open Project",
@@ -522,14 +556,30 @@ class BoxCAD(QMainWindow):
 
             widget = self.ui_builder.widgets[k]
 
-            if hasattr(widget, 'setValue') and isinstance(v, (int, float)):
+            if hasattr(widget, "setValue") and isinstance(v, (int, float)):
                 widget.setValue(v)
-            elif hasattr(widget, 'setChecked') and isinstance(v, bool):
+            elif hasattr(widget, "setChecked") and isinstance(v, bool):
                 widget.setChecked(v)
-            elif hasattr(widget, 'setCurrentText') and isinstance(v, str):
+            elif hasattr(widget, "setCurrentText") and isinstance(v, str):
                 widget.setCurrentText(v)
-            elif hasattr(widget, 'setPlainText') and isinstance(v, str):
+            elif hasattr(widget, "setPlainText") and isinstance(v, str):
                 widget.setPlainText(v)
+
+        if "cutouts" in data:
+            self.ui_builder.cutouts = []
+
+            # Clear existing cutout widgets from the layout
+            for i in reversed(range(self.ui_builder.manager_layout.count())):
+                widget = self.ui_builder.manager_layout.itemAt(i).widget()
+                if widget and widget != self.ui_builder.no_cutouts_label:
+                    widget.deleteLater()
+
+            # Re-add each cutout
+            for cutout in data["cutouts"]:
+                self.ui_builder.cutouts.append(cutout)
+                self.ui_builder._add_cutout_to_list(cutout)
+
+            self.ui_builder.refresh_empty_state()
 
         # Update state
         self.current_filepath = path
@@ -685,6 +735,8 @@ class BoxCAD(QMainWindow):
 
         if hasattr(self.ui_builder, 'add_cutout_btn'):
             self.ui_builder.add_cutout_btn.clicked.connect(self.rebuild_geometry)
+
+        self.ui_builder.rebuild_callback = self.rebuild_geometry
 
     def set_state(self, new_state: AppState):
         if self._state == new_state:
