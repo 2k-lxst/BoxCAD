@@ -3,7 +3,7 @@
 # BoxCAD
 ## A Parametric Enclosure Designer for Makers
 
-**BoxCAD** is a lightweight, Python-powered desktop application for designing custom, 3D-printable project enclosures. Instead of manually modeling simple boxes in CAD software, you define dimensions and hardware presets, preview the result in real time, and export directly for manufacturing.
+**BoxCAD** is a lightweight, Python-powered desktop application for designing custom, 3D-printable project enclosures. Instead of manually modeling simple boxes in CAD software, you define dimensions, preview the result in real time, and export directly for manufacturing.
 
 The goal is speed, repeatability, and clean parametric control — especially for electronics projects.
 
