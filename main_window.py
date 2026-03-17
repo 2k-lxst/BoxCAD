@@ -142,7 +142,10 @@ class GeometryTask(QtCore.QRunnable):
             }
 
             for cutout in p["cutouts"]:
+                box = cq.Workplane("XY").add(box.val())
+
                 face_selector = mapping.get(cutout["face"], ">Z")
+
                 try:
                     if cutout["shape"] == "Rectangle":
                         box = (
@@ -162,6 +165,8 @@ class GeometryTask(QtCore.QRunnable):
                         )
                 except Exception as e:
                     self.signals.error_occurred.emit(f"Cutout failed on {cutout["face"]}: {e}", "warning")
+
+            box = cq.Workplane("XY").add(box.val())
 
             screwpost_width = p_outerWidth - 2.0 * p_screwpostInset
             screwpost_length = p_outerLength - 2.0 * p_screwpostInset
@@ -184,12 +189,11 @@ class GeometryTask(QtCore.QRunnable):
             )
 
             lowerLid = lid.translate((0, 0, -p_lipHeight))
-            cutLip = lowerLid.cut(bottom).translate(
-                (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
-            )
+            cutLip = lowerLid.cut(bottom)
 
             screwHoleCenters = (
-                cutLip.faces(">Z")
+                cq.Workplane("XY").add(cutLip.val())
+                .faces(">Z")
                 .workplane()
                 .rect(screwpost_width, screwpost_length, forConstruction=True)
                 .vertices()
@@ -214,6 +218,11 @@ class GeometryTask(QtCore.QRunnable):
                     p_screwpostInnerDiameter,
                     p_outerHeight * 2
                 )
+
+            # Translate after holes are drilled
+            topOfLid = topOfLid.translate(
+                (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
+            )
 
             if p_invertLid:
                 topOfLid = topOfLid.rotateAboutCenter((1, 0, 0), 180)

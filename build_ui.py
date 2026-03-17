@@ -242,21 +242,21 @@ class BuildUI:
         self.widgets["hole_type"] = hole_type
 
         self.bore_diameter_input = QDoubleSpinBox()
-        self.bore_diameter_input.setRange(5, 200)
+        self.bore_diameter_input.setRange(0, 200)
         self.bore_diameter_input.setSuffix(" mm")
 
         layout.addRow("Bore Diameter:", self.bore_diameter_input)
         self.widgets["bore_diameter"] = self.bore_diameter_input
 
         self.bore_depth_input = QDoubleSpinBox()
-        self.bore_depth_input.setRange(5, 200)
+        self.bore_depth_input.setRange(0, 200)
         self.bore_depth_input.setSuffix(" mm")
 
         layout.addRow("Bore Depth:", self.bore_depth_input)
         self.widgets["bore_depth"] = self.bore_depth_input
 
         countersink_diameter_input = QDoubleSpinBox()
-        countersink_diameter_input.setRange(5, 200)
+        countersink_diameter_input.setRange(0, 200)
         countersink_diameter_input.setSuffix(" mm")
 
         layout.addRow("Countersink Diameter:", countersink_diameter_input)

@@ -10,7 +10,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     window.pybridge = channel.objects.pybridge;
 });
 
-let autoFitEnabled = true;
+let autoFitEnabled = false;
 let scene, camera, renderer, currentMesh;
 let measurementGroup = new THREE.Group();
 
