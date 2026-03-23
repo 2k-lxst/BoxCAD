@@ -77,13 +77,18 @@ class GeometryTask(QtCore.QRunnable):
             p_invertLid = p["invert_lid"]
             p_lipHeight = p["lip_height"]
             p_screwpostInset = p["screwpost_inset"]
-            p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
             p_screwpostOuterDiameter = p["screwpost_outer_diameter"]
+            p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
 
             p_boreDiameter = p["bore_diameter"]
             p_boreDepth = p["bore_depth"]
             p_countersinkDiameter = p["countersink_diameter"]
             p_countersinkAngle = p["countersink_angle"]
+
+            p_pcbScrewpostsOuterDiameter = p["pcb_screwposts_outer_diameter"]
+            p_pcbScrewpostsInnerDiameter = p["pcb_screwposts_inner_diameter"]
+            p_pcbScrewpostsHeight = p["pcb_screwposts_height"]
+            p_pcbScrewpostsCoordinates = p["pcb_screwposts_coordinates"]
 
             p_cutouts = p["cutouts"]
 
@@ -141,9 +146,8 @@ class GeometryTask(QtCore.QRunnable):
                 "Top (+Z)": ">Z"
             }
 
-            for cutout in p["cutouts"]:
+            for cutout in p_cutouts:
                 box = cq.Workplane("XY").add(box.val())
-
                 face_selector = mapping.get(cutout["face"], ">Z")
 
                 try:
@@ -165,6 +169,38 @@ class GeometryTask(QtCore.QRunnable):
                         )
                 except Exception as e:
                     self.signals.error_occurred.emit(f"Cutout failed on {cutout["face"]}: {e}", "warning")
+
+            if p_pcbScrewpostsCoordinates.strip():
+                for line in p_pcbScrewpostsCoordinates.strip().splitlines():
+                    line = line.strip()
+
+                    if not line: continue
+
+                    try:
+                        x_str, y_str = line.split(",")
+
+                        sx = float(x_str.strip())
+                        sy = float(y_str.strip())
+
+                        box = (
+                            cq.Workplane("XY").add(box.val())
+                            .faces("<Z")
+                            .workplane(offset=actual_wall_thickness, invert=True)
+                            .center(sx, sy)
+                            .circle(p_pcbScrewpostsOuterDiameter / 2.0)
+                            .extrude(p_pcbScrewpostsHeight)
+                        )
+
+                        box = (
+                            cq.Workplane("XY").add(box.val())
+                            .faces("<Z")
+                            .workplane(offset=actual_wall_thickness, invert=True)
+                            .center(sx, sy)
+                            .circle(p_pcbScrewpostsInnerDiameter / 2.0)
+                            .cutBlind(p_pcbScrewpostsHeight)
+                        )
+                    except Exception as e:
+                        self.signals.error_occurred.emit(f"Standoff parse error on '{line}': {e}", "warning")
 
             box = cq.Workplane("XY").add(box.val())
 

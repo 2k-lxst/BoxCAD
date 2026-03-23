@@ -69,7 +69,7 @@
     </size>
    </property>
    <property name="windowTitle">
-    <string>Hardware Library</string>
+    <string>Project Output</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>

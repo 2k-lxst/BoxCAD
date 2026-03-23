@@ -48,7 +48,7 @@ class BuildUI:
         explainer = QLabel(
             "<h1><b>Welcome to BoxCAD!</b></h1><hr>"
             "BoxCAD is a high-fidelity parametric engine designed to bridge the critical gap between internal electronic component architectures and their external physical protection, utilizing logic-driven geometry to automate the path from circuit design to precision-engineered chassis.<hr>"
-            "To open an existing project, first initialize the engine, then press <b>CTRL + O</b> or head up to <b>File > Open Project</b><hr>"
+            "To open an existing project, first initialize the engine (with button below), then press <b>CTRL + O</b> or head up to <b>File > Open Project</b><hr>"
             "To begin your design, click the button below!<br><br>"
             "<i>This will unlock all editing tools</i>"
         )
@@ -212,6 +212,13 @@ class BuildUI:
         layout.addRow("Screwpost Inset:", self.screwpost_inset_input)
         self.widgets["screwpost_inset"] = self.screwpost_inset_input
 
+        self.screwpost_outer_diameter_input = QDoubleSpinBox()
+        self.screwpost_outer_diameter_input.setRange(5, 200)
+        self.screwpost_outer_diameter_input.setSuffix(" mm")
+
+        layout.addRow("Screwpost Outer Diameter:", self.screwpost_outer_diameter_input)
+        self.widgets["screwpost_outer_diameter"] = self.screwpost_outer_diameter_input
+
         self.screwpost_inner_diameter_input = QDoubleSpinBox()
         self.screwpost_inner_diameter_input.setRange(1, 10)
         self.screwpost_inner_diameter_input.setValue(3) # Default to M3 screws (3mm)
@@ -219,13 +226,6 @@ class BuildUI:
 
         layout.addRow("Screwpost Inner Diameter:", self.screwpost_inner_diameter_input)
         self.widgets["screwpost_inner_diameter"] = self.screwpost_inner_diameter_input
-
-        self.screwpost_outer_diameter_input = QDoubleSpinBox()
-        self.screwpost_outer_diameter_input.setRange(5, 200)
-        self.screwpost_outer_diameter_input.setSuffix(" mm")
-
-        layout.addRow("Screwpost Outer Diameter:", self.screwpost_outer_diameter_input)
-        self.widgets["screwpost_outer_diameter"] = self.screwpost_outer_diameter_input
 
         self.add_vertical_spacer(layout)
 
@@ -277,41 +277,48 @@ class BuildUI:
     def build_hardware_page(self):
         page, layout = self.create_form_page()
 
-        # Standoff Height
-        standoff_height_input = QDoubleSpinBox()
-        standoff_height_input.setRange(1, 50)
-        standoff_height_input.setSuffix(" mm")
+        pcb_screwposts_outer_diameter_input = QDoubleSpinBox()
+        pcb_screwposts_outer_diameter_input.setRange(1, 20)
+        pcb_screwposts_outer_diameter_input.setValue(5)
+        pcb_screwposts_outer_diameter_input.setSuffix(" mm")
 
-        layout.addRow("Standoff Height:", standoff_height_input)
-        self.widgets["standoff_height"] = standoff_height_input
+        layout.addRow("PCB Screwposts Outer Diameter:", pcb_screwposts_outer_diameter_input)
+        self.widgets["pcb_screwposts_outer_diameter"] = pcb_screwposts_outer_diameter_input
 
-        # Standoff Diameter
-        standoff_diameter_input = QDoubleSpinBox()
-        standoff_diameter_input.setRange(1, 20)
-        standoff_diameter_input.setValue(5)
-        standoff_diameter_input.setSuffix(" mm")
+        pcb_screwposts_inner_diameter_input = QDoubleSpinBox()
+        pcb_screwposts_inner_diameter_input.setRange(1, 20)
+        pcb_screwposts_inner_diameter_input.setValue(3)
+        pcb_screwposts_inner_diameter_input.setSuffix(" mm")
 
-        layout.addRow("Standoff Diameter:", standoff_diameter_input)
-        self.widgets["standoff_diameter"] = standoff_diameter_input
+        layout.addRow("PCB Screwposts Inner Diameter:", pcb_screwposts_inner_diameter_input)
+        self.widgets["pcb_screwposts_inner_diameter"] = pcb_screwposts_inner_diameter_input
 
-        # Define PCB standoff location
-        self.pcb_coordinates_input = QPlainTextEdit()
-        self.pcb_coordinates_input.setMaximumHeight(150)
-        self.pcb_coordinates_input.setMaximumWidth(170)
-        self.pcb_coordinates_input.setPlaceholderText(
-            "- X, Y (one per line)\n\n"
+        pcb_screwposts_height_input = QDoubleSpinBox()
+        pcb_screwposts_height_input.setRange(1, 50)
+        pcb_screwposts_height_input.setValue(5)
+        pcb_screwposts_height_input.setSuffix(" mm")
+
+        layout.addRow("PCB Screwposts Height:", pcb_screwposts_height_input)
+        self.widgets["pcb_screwposts_height"] = pcb_screwposts_height_input
+
+        # Define PCB screwposts location
+        self.pcb_screwposts_coordinates_input = QPlainTextEdit()
+        self.pcb_screwposts_coordinates_input.setMaximumHeight(150)
+        self.pcb_screwposts_coordinates_input.setMaximumWidth(170)
+        self.pcb_screwposts_coordinates_input.setPlaceholderText(
+            "X, Y (one per line)\n\n"
             "Example:\n"
-            "- 12.0, 15.5\n"
-            "- 45.0, 10.0"
+            "12.0, 15.5\n"
+            "45, 10.05"
         )
 
         mono_font = QFont("Consolas", 10)
         mono_font.setStyleHint(QFont.Monospace) # Fallback to any monospace if Consolas is missing
 
-        self.pcb_coordinates_input.setFont(mono_font)
+        self.pcb_screwposts_coordinates_input.setFont(mono_font)
 
-        layout.addRow("PCB Standoff Coordinates:", self.pcb_coordinates_input)
-        self.widgets["pcb_standoff_coordinates"] = self.pcb_coordinates_input
+        layout.addRow("PCB Screwposts Coordinates:", self.pcb_screwposts_coordinates_input)
+        self.widgets["pcb_screwposts_coordinates"] = self.pcb_screwposts_coordinates_input
 
         self.add_vertical_spacer(layout)
 

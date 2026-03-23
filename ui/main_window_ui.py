@@ -107,7 +107,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.outputDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Hardware Library", None))
+        self.outputDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Project Output", None))
         self.parametersDock.setWindowTitle(QCoreApplication.translate("MainWindow", u"Parameters", None))
         self.parametersToolBox.setItemText(self.parametersToolBox.indexOf(self.page), QCoreApplication.translate("MainWindow", u"Getting Started...", None))
     # retranslateUi
