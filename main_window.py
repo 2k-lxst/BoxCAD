@@ -26,7 +26,7 @@ QMainWindow  = QtWidgets.QMainWindow
 from ui.main_window_ui import Ui_MainWindow
 
 # Import custom classes
-from build_ui import BuildUI
+from build_ui import BuildUI, PortGuideDialog
 from enum import Enum, auto
 
 class AppState(Enum):
@@ -348,8 +348,21 @@ class BoxCAD(QMainWindow):
         # Initialize components
         self.ui_builder = BuildUI()
         self.viewer = self.ui.viewer
+        self.viewer.set_logger(self.print_to_console)
 
-        self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer)
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer, self.show_port_guide)
+
+        if hasattr(self.ui_builder, "port_guide_btn"):
+
+            print("test")
+
+            # Disconnect first to avoid multiple triggers, then connect
+            try:
+                self.ui_builder.port_guide_btn.clicked.disconnect()
+            except:
+                pass
+
+            self.ui_builder.port_guide_btn.clicked.connect(self.show_port_guide)
 
         def unlock_ui():
             # This reaches into the ui class and enables the specific button
@@ -370,6 +383,18 @@ class BoxCAD(QMainWindow):
         self.rebuild_timer.setSingleShot(True)
         self.rebuild_timer.setInterval(200)
         self.rebuild_timer.timeout.connect(self.execute_thread_build)
+
+    def show_port_guide(self):
+        if not hasattr(self, "guide_dialog"):
+            self.guide_dialog = PortGuideDialog(self)
+
+        print("TESTING1!!!!")
+
+        self.guide_dialog.show()
+        self.guide_dialog.raise_()
+        self.guide_dialog.activateWindow()
+
+        self.print_to_console("Opened Port Reference Guide.", "info")
 
     def new_project(self):
         # Reset file state
@@ -415,13 +440,13 @@ class BoxCAD(QMainWindow):
 
             # Block signals to avoid triggering rebuild/snapshot while restoring
             widget.blockSignals(True)
-            if hasattr(widget, 'setValue') and isinstance(v, (int, float)):
+            if hasattr(widget, "setValue") and isinstance(v, (int, float)):
                 widget.setValue(v)
-            elif hasattr(widget, 'setChecked') and isinstance(v, bool):
+            elif hasattr(widget, "setChecked") and isinstance(v, bool):
                 widget.setChecked(v)
-            elif hasattr(widget, 'setCurrentText') and isinstance(v, str):
+            elif hasattr(widget, "setCurrentText") and isinstance(v, str):
                 widget.setCurrentText(v)
-            elif hasattr(widget, 'setPlainText') and isinstance(v, str):
+            elif hasattr(widget, "setPlainText") and isinstance(v, str):
                 widget.setPlainText(v)
 
             widget.blockSignals(False)
@@ -477,13 +502,13 @@ class BoxCAD(QMainWindow):
         data = {}
 
         for k, v in self.ui_builder.widgets.items():
-            if hasattr(v, 'value'):
+            if hasattr(v, "value"):
                 data[k] = v.value()
-            elif hasattr(v, 'isChecked'):
+            elif hasattr(v, "isChecked"):
                 data[k] = v.isChecked()
-            elif hasattr(v, 'currentText'):
+            elif hasattr(v, "currentText"):
                 data[k] = v.currentText()
-            elif hasattr(v, 'toPlainText'):
+            elif hasattr(v, "toPlainText"):
                 data[k] = v.toPlainText()
 
         # Discard any redo history beyond current index
@@ -555,14 +580,15 @@ class BoxCAD(QMainWindow):
 
         # Collect all widget values
         data = {}
+
         for k, v in self.ui_builder.widgets.items():
-            if hasattr(v, 'value'):
+            if hasattr(v, "value"):
                 data[k] = v.value()
-            elif hasattr(v, 'isChecked'):
+            elif hasattr(v, "isChecked"):
                 data[k] = v.isChecked()
-            elif hasattr(v, 'currentText'):
+            elif hasattr(v, "currentText"):
                 data[k] = v.currentText()
-            elif hasattr(v, 'toPlainText'):
+            elif hasattr(v, "toPlainText"):
                 data[k] = v.toPlainText()
 
         data["cutouts"] = self.ui_builder.cutouts
@@ -725,7 +751,7 @@ class BoxCAD(QMainWindow):
 
     def init_project(self):
         self.ui_builder.project_initialized = True
-        self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer)
+        self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer, self.show_port_guide)
         self.connect_ui_signals()
 
         # Enable menu actions now that project is ready
@@ -778,7 +804,7 @@ class BoxCAD(QMainWindow):
             elif isinstance(widget, QtWidgets.QPlainTextEdit):
                 widget.textChanged.connect(self.rebuild_geometry)
 
-        if hasattr(self.ui_builder, 'add_cutout_btn'):
+        if hasattr(self.ui_builder, "add_cutout_btn"):
             self.ui_builder.add_cutout_btn.clicked.connect(self.rebuild_geometry)
 
         self.ui_builder.rebuild_callback = self.rebuild_geometry
@@ -810,12 +836,25 @@ class BoxCAD(QMainWindow):
 
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored
+        from datetime import datetime
 
         colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey", "state_change": "magenta"}
 
         color = colors.get(type, "white")
 
         print(colored(f"[{type.replace("_", " ").upper()}] {message}", color))
+
+        gui_colors = {"info": "#3498db", "warning": "#f1c40f", "error": "#e74c3c", "success": "#2ecc71"}
+        selected_color = gui_colors.get(type, "#ffffff")
+
+        timestamp = datetime.now().astimezone().strftime("%H:%M:%S")
+        formatted_msg = f"<span style='color:{selected_color};'>[{timestamp}] [{type.upper()}]</span> {message}"
+
+        # Append to QPlainTextEdit
+        self.ui.consoleOutput.appendHtml(formatted_msg)
+
+        # Auto-scroll to bottom
+        self.ui.consoleOutput.ensureCursorVisible()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

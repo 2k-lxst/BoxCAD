@@ -1,9 +1,93 @@
 # Pyright false positive due to dynamic PySide attributes
 # pyright: reportAttributeAccessIssue=false
 
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QDoubleSpinBox, QPlainTextEdit, QSpacerItem, QSizePolicy, QToolBox, QComboBox, QPushButton, QScrollArea, QGroupBox, QCheckBox, QMessageBox
+from qtpy.QtWidgets import (
+    QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QFormLayout,
+    QGroupBox, QHBoxLayout, QHeaderView, QLabel, QMessageBox,
+    QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy,
+    QSpacerItem, QTableWidget, QTableWidgetItem, QToolBox,
+    QVBoxLayout, QWidget
+)
+
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QFont
+from qtpy.QtGui import QFont, QGuiApplication
+
+class PortGuideDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Port Reference Guide - Click to Copy")
+        self.setMinimumSize(450, 500)
+
+        layout = QVBoxLayout(self)
+
+        # Header
+        header = QLabel("<h3>Global Port Reference</h3>")
+        subtitle = QLabel("Click the [C] buttons to copy dimensions to clipboard.")
+        subtitle.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 10px;")
+        layout.addWidget(header)
+        layout.addWidget(subtitle)
+
+        # Table Setup
+        self.table = QTableWidget(14, 3) # Rows for all ports we discussed
+        self.table.setHorizontalHeaderLabels(["Port Type", "Width (X)", "Height (Y)"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers) # Make it read-only
+
+        # Data Dictionary
+        ports = [
+            ("USB Type-C / 4.0", "8.4", "2.6"),
+            ("USB 2.0 Standard-A", "12.0", "4.5"),
+            ("USB 3.0 Standard-A", "12.0", "4.5"),
+            ("USB Micro-B", "6.85", "1.8"),
+            ("HDMI (Standard)", "15.0", "6.0"),
+            ("DisplayPort", "19.0", "10.0"),
+            ("Ethernet (RJ45)", "16.0", "14.0"),
+            ("SD Card Slot", "24.0", "2.1"),
+            ("Micro SD Slot", "15.0", "2.0"),
+            ("3.5mm Audio Jack", "6.0", "6.0"),
+            ("DC Jack (Typical)", "11.0", "11.0"),
+            ("IEC C14 (Power)", "27.5", "20.0"),
+            ("DB9 (Serial)", "31.0", "13.0"),
+            ("VGA (Old)", "31.0", "13.0")
+        ]
+
+        for row, (name, w, h) in enumerate(ports):
+            self.table.setItem(row, 0, QTableWidgetItem(name))
+
+            # Width Cell with Button
+            self._add_copy_cell(row, 1, w)
+            # Height Cell with Button
+            self._add_copy_cell(row, 2, h)
+
+        layout.addWidget(self.table)
+
+        # Footer
+        footer = QLabel("<i>Last Updated: 25th of March 2026</i>")
+        footer.setStyleSheet("font-size: 9px; color: #bbb;")
+        layout.addWidget(footer)
+
+    def _add_copy_cell(self, row, col, value):
+        container = QWidget()
+        cell_layout = QHBoxLayout(container)
+        cell_layout.setContentsMargins(2, 2, 2, 2)
+
+        label = QLabel(f"{value}mm")
+        btn = QPushButton("C")
+        btn.setFixedSize(20, 20)
+        btn.setToolTip(f"Copy {value} to clipboard")
+        btn.setStyleSheet("font-size: 9px; background-color: #f0f0f0; border: 1px solid #ccc;")
+
+        # Lambda captures current value for the clipboard
+        btn.clicked.connect(lambda: self.copy_to_clipboard(value))
+
+        cell_layout.addWidget(label)
+        cell_layout.addStretch()
+        cell_layout.addWidget(btn)
+        self.table.setCellWidget(row, col, container)
+
+    def copy_to_clipboard(self, text):
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText(text)
 
 class BuildUI:
     def __init__(self):
@@ -324,8 +408,41 @@ class BuildUI:
 
         return page
 
-    def build_cutouts_page(self):
+    def build_cutouts_page(self, guide_callback):
         page, layout = self.create_form_page()
+
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 5) # Small bottom margin
+
+        title_label = QLabel("<b>Configuration</b>")
+        title_label.setStyleSheet("font-size: 13px; color: #555;")
+
+        # Create the "?" button
+        self.port_guide_btn = QPushButton("?")
+        self.port_guide_btn.setFixedSize(22, 22)
+        self.port_guide_btn.setToolTip("Show port size reference guide")
+        self.port_guide_btn.setCursor(Qt.PointingHandCursor)
+        self.port_guide_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #34495e;
+                color: white;
+                border-radius: 11px;
+                font-weight: bold;
+                border: none;
+            }
+
+            QPushButton:hover {
+                background-color: #1c2833;
+            }
+        """)
+
+        header_layout.addWidget(title_label)
+        header_layout.addStretch()
+        header_layout.addWidget(self.port_guide_btn)
+
+        # Add the header to the main page layout
+        layout.addRow(header_widget)
 
         # The creator zone
         creator_box = QGroupBox("Add New Cutout")
@@ -474,7 +591,7 @@ class BuildUI:
 
         layout.addItem(spacer)
 
-    def populate_toolbox(self, toolbox: QToolBox, viewer):
+    def populate_toolbox(self, toolbox: QToolBox, viewer, guide_callback):
         """Clears and rebuilds the toolbox pages."""
         self.print_to_console("Populating toolbox!", "info")
 
@@ -513,7 +630,7 @@ class BuildUI:
             toolbox.addItem(self.build_assembly_page(), "Lid && Screwposts")
             toolbox.addItem(self.build_bore_countersink_page(), "Counterbore && Countersink")
             toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
-            toolbox.addItem(self.build_cutouts_page(), "Cutouts && Ports")
+            toolbox.addItem(self.build_cutouts_page(guide_callback), "Cutouts && Ports")
 
     def refresh_empty_state(self):
         item_count = self.manager_layout.count() - 1 # Subtract 1 because the label is part of the layout

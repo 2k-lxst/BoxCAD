@@ -73,6 +73,8 @@ class ModelViewer(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.logger = None
+
         # Layout and browser
         self.browser = QWebEngineView()
         self.layout = QVBoxLayout(self)
@@ -122,6 +124,8 @@ class ModelViewer(QFrame):
         self.pending_object = cq_object
         self.update_timer.start()
 
+        if self.logger: self.logger("Model updated successfully!", "success")
+
     def _execute_update(self):
         """The actual update happens here only after the user stops typing"""
         if self.pending_object is None: return
@@ -148,6 +152,9 @@ class ModelViewer(QFrame):
 
         except Exception as e:
             self.print_to_console(f"STL Export Error: {str(e)}", "error")
+
+    def set_logger(self, log_func):
+        self.logger = log_func
 
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored

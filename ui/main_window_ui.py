@@ -15,9 +15,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QDockWidget, QFormLayout, QFrame,
-    QMainWindow, QSizePolicy, QStatusBar, QToolBox,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractScrollArea, QApplication, QDockWidget, QFormLayout,
+    QFrame, QHBoxLayout, QMainWindow, QPlainTextEdit,
+    QSizePolicy, QStatusBar, QToolBox, QVBoxLayout,
+    QWidget)
 
 from model_viewer import ModelViewer
 
@@ -35,8 +36,8 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         sizePolicy.setHeightForWidth(self.centralwidget.sizePolicy().hasHeightForWidth())
         self.centralwidget.setSizePolicy(sizePolicy)
-        self.verticalLayout = QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.horizontalLayout = QHBoxLayout(self.centralwidget)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.viewer = ModelViewer(self.centralwidget)
         self.viewer.setObjectName(u"viewer")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -49,7 +50,7 @@ class Ui_MainWindow(object):
         self.viewer.setFrameShape(QFrame.StyledPanel)
         self.viewer.setFrameShadow(QFrame.Raised)
 
-        self.verticalLayout.addWidget(self.viewer)
+        self.horizontalLayout.addWidget(self.viewer)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
@@ -57,10 +58,37 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.outputDock = QDockWidget(MainWindow)
         self.outputDock.setObjectName(u"outputDock")
-        self.outputDock.setMinimumSize(QSize(500, 100))
-        self.outputDock.setMaximumSize(QSize(524287, 524287))
+        self.outputDock.setEnabled(True)
+        self.outputDock.setMinimumSize(QSize(500, 20))
+        self.outputDock.setMaximumSize(QSize(524287, 130))
         self.dockWidgetContents_2 = QWidget()
         self.dockWidgetContents_2.setObjectName(u"dockWidgetContents_2")
+        self.verticalLayout = QVBoxLayout(self.dockWidgetContents_2)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.consoleOutput = QPlainTextEdit(self.dockWidgetContents_2)
+        self.consoleOutput.setObjectName(u"consoleOutput")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.consoleOutput.sizePolicy().hasHeightForWidth())
+        self.consoleOutput.setSizePolicy(sizePolicy2)
+        font = QFont()
+        font.setFamilies([u"Consolas,Monospace"])
+        self.consoleOutput.setFont(font)
+        self.consoleOutput.setStyleSheet(u"QPlainTextEdit {\n"
+"	background-color: transparent;\n"
+"	border: none;\n"
+"	color: #dcdcdc; /* Subtle light gray text */\n"
+"	font-family: 'Consolas', 'Monospace'; /* Terminal look */\n"
+"	font-size: 12px;\n"
+"}")
+        self.consoleOutput.setFrameShape(QFrame.NoFrame)
+        self.consoleOutput.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.consoleOutput.setSizeAdjustPolicy(QAbstractScrollArea.AdjustIgnored)
+        self.consoleOutput.setReadOnly(True)
+
+        self.verticalLayout.addWidget(self.consoleOutput)
+
         self.outputDock.setWidget(self.dockWidgetContents_2)
         MainWindow.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.outputDock)
         self.parametersDock = QDockWidget(MainWindow)
