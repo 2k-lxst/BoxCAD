@@ -345,24 +345,19 @@ class BoxCAD(QMainWindow):
         except ImportError: # This error happens if running in a development enviroment (IDE)
             pass
 
+        self.print_to_console(
+            f"Information: BoxCAD v{app_version}\n============\n"
+            f"Python: {sys.version.split()[0]} ({platform.python_implementation()})\n"
+            f"Executable: {sys.executable}\nOS: {platform.system()} {platform.release()} ({platform.machine()})\n",
+            "startup"
+        )
+
         # Initialize components
         self.ui_builder = BuildUI()
         self.viewer = self.ui.viewer
         self.viewer.set_logger(self.print_to_console)
 
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer, self.show_port_guide)
-
-        if hasattr(self.ui_builder, "port_guide_btn"):
-
-            print("test")
-
-            # Disconnect first to avoid multiple triggers, then connect
-            try:
-                self.ui_builder.port_guide_btn.clicked.disconnect()
-            except:
-                pass
-
-            self.ui_builder.port_guide_btn.clicked.connect(self.show_port_guide)
 
         def unlock_ui():
             # This reaches into the ui class and enables the specific button
@@ -385,16 +380,17 @@ class BoxCAD(QMainWindow):
         self.rebuild_timer.timeout.connect(self.execute_thread_build)
 
     def show_port_guide(self):
-        if not hasattr(self, "guide_dialog"):
-            self.guide_dialog = PortGuideDialog(self)
+        def fill(w, h):
+            self.ui_builder.cutout_width_input.setValue(w)
+            self.ui_builder.cutout_height_input.setValue(h)
 
-        print("TESTING1!!!!")
+        self.guide_dialog = PortGuideDialog(self, fill_callback=fill)
 
         self.guide_dialog.show()
         self.guide_dialog.raise_()
         self.guide_dialog.activateWindow()
 
-        self.print_to_console("Opened Port Reference Guide.", "info")
+        self.print_to_console("Opened port reference guide", "info")
 
     def new_project(self):
         # Reset file state
@@ -807,6 +803,9 @@ class BoxCAD(QMainWindow):
         if hasattr(self.ui_builder, "add_cutout_btn"):
             self.ui_builder.add_cutout_btn.clicked.connect(self.rebuild_geometry)
 
+        if hasattr(self.ui_builder, "port_guide_btn"):
+            self.ui_builder.port_guide_btn.clicked.connect(self.show_port_guide)
+
         self.ui_builder.rebuild_callback = self.rebuild_geometry
 
     def set_state(self, new_state: AppState):
@@ -834,26 +833,55 @@ class BoxCAD(QMainWindow):
             # TODO: Call the viewer.html error handling
             pass
 
-    def print_to_console(self, message = "No message was provided!", type = "info"):
+    def print_to_console(self, message="No message was provided!", type="info", show_tag=True):
         from termcolor import colored
         from datetime import datetime
 
-        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey", "state_change": "magenta"}
+        colors = {
+            "info": "blue",
+            "warning": "yellow",
+            "error": "red",
+            "success": "green",
+            "silenced": "dark_grey",
+            "state_change": "magenta",
+            "model_update": "cyan",
+            "startup": "white"
+        }
 
         color = colors.get(type, "white")
 
-        print(colored(f"[{type.replace("_", " ").upper()}] {message}", color))
+        if type == "startup":
+            show_tag = False
 
-        gui_colors = {"info": "#3498db", "warning": "#f1c40f", "error": "#e74c3c", "success": "#2ecc71"}
+        tag = f"\033[1m[{type.replace('_', ' ').upper()}]\033[0m " if show_tag else ""
+
+        print(colored(f"{tag}{message}", color))
+
+        gui_colors = {
+            "info": "#3498db",
+            "warning": "#f1c40f",
+            "error": "#e74c3c",
+            "success": "#2ecc71",
+            "silenced": "#555555",
+            "state_change": "#ff00ff",
+            "model_update": "#00ffff",
+            "startup": "#ffffff"
+        }
+
         selected_color = gui_colors.get(type, "#ffffff")
 
         timestamp = datetime.now().astimezone().strftime("%H:%M:%S")
-        formatted_msg = f"<span style='color:{selected_color};'>[{timestamp}] [{type.upper()}]</span> {message}"
 
-        # Append to QPlainTextEdit
+        safe_message = message.replace("\n", "<br>")
+
+        if show_tag:
+            prefix = f"[{timestamp}] <b>[{type.upper()}]</b> "
+        else:
+            prefix = ""
+
+        formatted_msg = f"<span style='color:{selected_color};'>{prefix}</span>{safe_message}"
+
         self.ui.consoleOutput.appendHtml(formatted_msg)
-
-        # Auto-scroll to bottom
         self.ui.consoleOutput.ensureCursorVisible()
 
 if __name__ == "__main__":

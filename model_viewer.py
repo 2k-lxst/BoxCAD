@@ -124,7 +124,7 @@ class ModelViewer(QFrame):
         self.pending_object = cq_object
         self.update_timer.start()
 
-        if self.logger: self.logger("Model updated successfully!", "success")
+        if self.logger: self.logger("Model updated successfully!", "model_update")
 
     def _execute_update(self):
         """The actual update happens here only after the user stops typing"""

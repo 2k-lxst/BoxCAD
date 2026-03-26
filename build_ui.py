@@ -2,7 +2,7 @@
 # pyright: reportAttributeAccessIssue=false
 
 from qtpy.QtWidgets import (
-    QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QFormLayout,
+    QCheckBox, QComboBox, QDialog, QDoubleSpinBox, QSpinBox, QFormLayout,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel, QMessageBox,
     QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy,
     QSpacerItem, QTableWidget, QTableWidgetItem, QToolBox,
@@ -10,84 +10,96 @@ from qtpy.QtWidgets import (
 )
 
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QFont, QGuiApplication
+from qtpy.QtGui import QFont, QCursor
 
 class PortGuideDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, fill_callback=None):
         super().__init__(parent)
-        self.setWindowTitle("Port Reference Guide - Click to Copy")
+        self.fill_callback = fill_callback  # ✅ store the callback
+        self.setWindowTitle("Port Reference Guide")
         self.setMinimumSize(450, 500)
 
         layout = QVBoxLayout(self)
 
-        # Header
         header = QLabel("<h3>Global Port Reference</h3>")
-        subtitle = QLabel("Click the [C] buttons to copy dimensions to clipboard.")
-        subtitle.setStyleSheet("color: #888; font-size: 11px; margin-bottom: 10px;")
+        subtitle = QLabel("Click [Fill] to apply dimensions to the cutout spinboxes.\nRemember: Filling in the dimensions will replace the current values - this CANNOT be undone!")
+        subtitle.setStyleSheet("color: #888888; font-size: 11px; margin-bottom: 10px;")
         layout.addWidget(header)
         layout.addWidget(subtitle)
 
-        # Table Setup
-        self.table = QTableWidget(14, 3) # Rows for all ports we discussed
+        self.table = QTableWidget(14, 3)
         self.table.setHorizontalHeaderLabels(["Port Type", "Width (X)", "Height (Y)"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers) # Make it read-only
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        # Data Dictionary
         ports = [
-            ("USB Type-C / 4.0", "8.4", "2.6"),
-            ("USB 2.0 Standard-A", "12.0", "4.5"),
-            ("USB 3.0 Standard-A", "12.0", "4.5"),
-            ("USB Micro-B", "6.85", "1.8"),
-            ("HDMI (Standard)", "15.0", "6.0"),
-            ("DisplayPort", "19.0", "10.0"),
-            ("Ethernet (RJ45)", "16.0", "14.0"),
-            ("SD Card Slot", "24.0", "2.1"),
-            ("Micro SD Slot", "15.0", "2.0"),
-            ("3.5mm Audio Jack", "6.0", "6.0"),
-            ("DC Jack (Typical)", "11.0", "11.0"),
-            ("IEC C14 (Power)", "27.5", "20.0"),
-            ("DB9 (Serial)", "31.0", "13.0"),
-            ("VGA (Old)", "31.0", "13.0")
+            ("USB Type-C / 4.0", 8.4, 2.6),
+            ("USB 2.0 Standard-A", 12.0, 4.5),
+            ("USB 3.0 Standard-A", 12.0, 4.5),
+            ("USB Micro-B", 6.85, 1.8),
+            ("HDMI (Standard)", 15.0, 6.0),
+            ("DisplayPort", 19.0, 10.0),
+            ("Ethernet (RJ45)", 16.0, 14.0),
+            ("SD Card Slot", 24.0, 2.1),
+            ("Micro SD Slot", 15.0, 2.0),
+            ("3.5mm Audio Jack", 6.0, 6.0),
+            ("DC Jack (Typical)", 11.0, 11.0),
+            ("IEC C14 (Power)", 27.5, 20.0),
+            ("DB9 (Serial)", 31.0, 13.0),
+            ("VGA (Old)", 31.0, 13.0)
         ]
 
         for row, (name, w, h) in enumerate(ports):
             self.table.setItem(row, 0, QTableWidgetItem(name))
+            self._add_fill_cell(row, 1, w)
+            self._add_fill_cell(row, 2, h)
 
-            # Width Cell with Button
-            self._add_copy_cell(row, 1, w)
-            # Height Cell with Button
-            self._add_copy_cell(row, 2, h)
+            # Add a Fill Row button in the second column that fills both width and height
+            self._add_fill_row_btn(row, w, h)
 
         layout.addWidget(self.table)
 
-        # Footer
-        footer = QLabel("<i>Last Updated: 25th of March 2026</i>")
-        footer.setStyleSheet("font-size: 9px; color: #bbb;")
+        footer = QLabel("<i>Last Updated: 26th of March 2026</i>")
+        footer.setStyleSheet("font-size: 12px; color: #bbbbbb;")
+
         layout.addWidget(footer)
 
-    def _add_copy_cell(self, row, col, value):
+    def _add_fill_cell(self, row, col, value):
         container = QWidget()
         cell_layout = QHBoxLayout(container)
         cell_layout.setContentsMargins(2, 2, 2, 2)
 
-        label = QLabel(f"{value}mm")
-        btn = QPushButton("C")
-        btn.setFixedSize(20, 20)
-        btn.setToolTip(f"Copy {value} to clipboard")
-        btn.setStyleSheet("font-size: 9px; background-color: #f0f0f0; border: 1px solid #ccc;")
+        label = QLabel(f"{value} mm")
+        cell_layout.addWidget(label)
 
-        # Lambda captures current value for the clipboard
-        btn.clicked.connect(lambda: self.copy_to_clipboard(value))
+        self.table.setCellWidget(row, col, container)
+
+    def _add_fill_row_btn(self, row, w, h):
+        """Replaces the second column with a label and the fill button."""
+        container = QWidget()
+        cell_layout = QHBoxLayout(container)
+        cell_layout.setContentsMargins(2, 2, 2, 2)
+
+        label = QLabel(f"{h}mm")
+        btn = QPushButton("Fill")
+        btn.setFixedSize(36, 20)
+        btn.setToolTip(f"Fill width={w}, height={h} into cutout fields")
+        btn.setStyleSheet("font-size: 10px; background-color: #1a6b3a; color: white; border: none; border-radius: 3px;")
+        btn.setCursor(QCursor(Qt.PointingHandCursor))
+
+        btn.clicked.connect(lambda: self._fill(w, h))
 
         cell_layout.addWidget(label)
         cell_layout.addStretch()
         cell_layout.addWidget(btn)
-        self.table.setCellWidget(row, col, container)
 
-    def copy_to_clipboard(self, text):
-        clipboard = QGuiApplication.clipboard()
-        clipboard.setText(text)
+        self.table.setCellWidget(row, 2, container)
+
+    def _fill(self, w, h):
+        if self.fill_callback:
+            self.fill_callback(w, h)
+
+        self.accept() # Close the dialog after filling
 
 class BuildUI:
     def __init__(self):
@@ -217,11 +229,6 @@ class BuildUI:
         layout.addRow("Outer Height (Z):", self.height_input)
         self.widgets["outer_height"] = self.height_input
 
-        # Connect all dimension spin boxes to the update_min_max_values function
-        self.width_input.valueChanged.connect(self.update_min_max_values)
-        self.length_input.valueChanged.connect(self.update_min_max_values)
-        self.height_input.valueChanged.connect(self.update_min_max_values)
-
         self.wall_thickness_input = QDoubleSpinBox()
         self.wall_thickness_input.setMinimum(1)
         self.wall_thickness_input.setSuffix(" mm")
@@ -253,6 +260,8 @@ class BuildUI:
         t = self.wall_thickness_input.value()
         r = self.side_radius_input.value()
 
+        i_d = self.screwpost_inner_diameter_input.value()
+
         absoulte_min_dimensions = min(w, l, h)
         max_wall_thickness = (absoulte_min_dimensions / 2.0) - 1.0
         self.wall_thickness_input.setRange(0.5, max(0.5, max_wall_thickness))
@@ -270,7 +279,25 @@ class BuildUI:
         self.edge_rounding_input.setMaximum(max(0, max_edge_round))
 
         max_lip = h - (t * 2.0) - 2.0
-        self.widgets["lip_height"].setMaximum(max(1.0, max_lip))
+        self.lip_height_input.setMaximum(max(1.0, max_lip))
+
+        if self.hole_type.currentText() == "None (no modifications)":
+            self.bore_diameter_input.setDisabled(True)
+            self.bore_depth_input.setDisabled(True)
+            self.countersink_diameter_input.setDisabled(True)
+            self.countersink_angle_input.setDisabled(True)
+        if self.hole_type.currentText() == "Counterbore":
+            self.bore_diameter_input.setEnabled(True)
+            self.bore_depth_input.setEnabled(True)
+            self.countersink_diameter_input.setDisabled(True)
+            self.countersink_angle_input.setDisabled(True)
+        elif self.hole_type.currentText() == "Countersink":
+            self.countersink_diameter_input.setEnabled(True)
+            self.countersink_angle_input.setEnabled(True)
+            self.bore_diameter_input.setDisabled(True)
+            self.bore_depth_input.setDisabled(True)
+
+        self.countersink_diameter_input.setMinimum(i_d + 1)
 
     def build_assembly_page(self):
         page, layout = self.create_form_page()
@@ -319,15 +346,16 @@ class BuildUI:
         page, layout = self.create_form_page()
 
         # Bore
-        hole_type = QComboBox()
-        hole_type.addItems(["None (no modifications)", "Counterbore", "Countersink"])
+        self.hole_type = QComboBox()
+        self.hole_type.addItems(["None (no modifications)", "Counterbore", "Countersink"])
 
-        layout.addRow("Hole type:", hole_type)
-        self.widgets["hole_type"] = hole_type
+        layout.addRow("Hole type:", self.hole_type)
+        self.widgets["hole_type"] = self.hole_type
 
         self.bore_diameter_input = QDoubleSpinBox()
         self.bore_diameter_input.setRange(0, 200)
         self.bore_diameter_input.setSuffix(" mm")
+        self.bore_diameter_input.setDisabled(True)
 
         layout.addRow("Bore Diameter:", self.bore_diameter_input)
         self.widgets["bore_diameter"] = self.bore_diameter_input
@@ -335,24 +363,28 @@ class BuildUI:
         self.bore_depth_input = QDoubleSpinBox()
         self.bore_depth_input.setRange(0, 200)
         self.bore_depth_input.setSuffix(" mm")
+        self.bore_depth_input.setDisabled(True)
 
         layout.addRow("Bore Depth:", self.bore_depth_input)
         self.widgets["bore_depth"] = self.bore_depth_input
 
-        countersink_diameter_input = QDoubleSpinBox()
-        countersink_diameter_input.setRange(0, 200)
-        countersink_diameter_input.setSuffix(" mm")
+        self.countersink_diameter_input = QDoubleSpinBox()
+        self.countersink_diameter_input.setMaximum(200)
+        self.countersink_diameter_input.setValue(self.screwpost_inner_diameter_input.value() + 1)
+        self.countersink_diameter_input.setSuffix(" mm")
+        self.countersink_diameter_input.setDisabled(True)
 
-        layout.addRow("Countersink Diameter:", countersink_diameter_input)
-        self.widgets["countersink_diameter"] = countersink_diameter_input
+        layout.addRow("Countersink Diameter:", self.countersink_diameter_input)
+        self.widgets["countersink_diameter"] = self.countersink_diameter_input
 
-        countersink_angle_input = QDoubleSpinBox()
-        countersink_angle_input.setRange(60, 90)
-        countersink_angle_input.setValue(90)
-        countersink_angle_input.setSuffix(" °")
+        self.countersink_angle_input = QDoubleSpinBox()
+        self.countersink_angle_input.setRange(60, 90)
+        self.countersink_angle_input.setValue(90)
+        self.countersink_angle_input.setSuffix(" °")
+        self.countersink_angle_input.setDisabled(True)
 
-        layout.addRow("Countersink Angle:", countersink_angle_input)
-        self.widgets["countersink_angle"] = countersink_angle_input
+        layout.addRow("Countersink Angle:", self.countersink_angle_input)
+        self.widgets["countersink_angle"] = self.countersink_angle_input
 
         self.add_vertical_spacer(layout)
 
@@ -455,34 +487,34 @@ class BuildUI:
         self.cutout_shape = QComboBox()
         self.cutout_shape.addItems(["Rectangle", "Circle"])
 
-        self.cutout_width = QDoubleSpinBox()
-        self.cutout_width.setRange(1, 200)
-        self.cutout_width.setSuffix(" mm")
+        self.cutout_width_input = QDoubleSpinBox()
+        self.cutout_width_input.setRange(1, 200)
+        self.cutout_width_input.setSuffix(" mm")
 
-        self.cutout_height = QDoubleSpinBox()
-        self.cutout_height.setRange(1, 200)
-        self.cutout_height.setSuffix(" mm")
+        self.cutout_height_input = QDoubleSpinBox()
+        self.cutout_height_input.setRange(1, 200)
+        self.cutout_height_input.setSuffix(" mm")
 
-        self.cutout_diameter = QDoubleSpinBox()
-        self.cutout_diameter.setRange(1, 200)
-        self.cutout_diameter.setSuffix(" mm")
+        self.cutout_diameter_input = QDoubleSpinBox()
+        self.cutout_diameter_input.setRange(1, 200)
+        self.cutout_diameter_input.setSuffix(" mm")
 
-        self.cutout_x = QDoubleSpinBox()
-        self.cutout_x.setMaximum(200)
-        self.cutout_x.setSuffix(" mm")
+        self.cutout_x_input = QDoubleSpinBox()
+        self.cutout_x_input.setMaximum(200)
+        self.cutout_x_input.setSuffix(" mm")
 
-        self.cutout_y = QDoubleSpinBox()
-        self.cutout_x.setMaximum(200)
-        self.cutout_y.setSuffix(" mm")
+        self.cutout_y_input = QDoubleSpinBox()
+        self.cutout_y_input.setMaximum(200)
+        self.cutout_y_input.setSuffix(" mm")
 
         # Add items to the creator form
         creator_layout.addRow("Target Face:", self.cutout_face)
         creator_layout.addRow("Shape:", self.cutout_shape)
-        creator_layout.addRow("Width:", self.cutout_width)
-        creator_layout.addRow("Height", self.cutout_height)
-        creator_layout.addRow("Diameter (circle only)", self.cutout_diameter)
-        creator_layout.addRow("Horizontal Offset:", self.cutout_x)
-        creator_layout.addRow("Vertical Offset:", self.cutout_y)
+        creator_layout.addRow("Width:", self.cutout_width_input)
+        creator_layout.addRow("Height", self.cutout_height_input)
+        creator_layout.addRow("Diameter (circle only)", self.cutout_diameter_input)
+        creator_layout.addRow("Horizontal Offset:", self.cutout_x_input)
+        creator_layout.addRow("Vertical Offset:", self.cutout_y_input)
 
         self.add_cutout_btn = QPushButton("Add Cutout to List")
         self.add_cutout_btn.clicked.connect(self.add_cutout)
@@ -499,7 +531,6 @@ class BuildUI:
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setMinimumHeight(200)
-        # self.scroll_area.setMaximumWidth(100)
 
         self.no_cutouts_label = QLabel("No Cutouts Active")
 
@@ -534,11 +565,11 @@ class BuildUI:
         cutout = {
             "face": self.cutout_face.currentText(),
             "shape": self.cutout_shape.currentText(),
-            "x": self.cutout_x.value(),
-            "y": self.cutout_y.value(),
-            "width": self.cutout_width.value(),
-            "height": self.cutout_height.value(),
-            "diameter": self.cutout_diameter.value()
+            "x": self.cutout_x_input.value(),
+            "y": self.cutout_y_input.value(),
+            "width": self.cutout_width_input.value(),
+            "height": self.cutout_height_input.value(),
+            "diameter": self.cutout_diameter_input.value()
         }
 
         self.cutouts.append(cutout)
@@ -632,6 +663,12 @@ class BuildUI:
             toolbox.addItem(self.build_hardware_page(), "Internal Hardware")
             toolbox.addItem(self.build_cutouts_page(guide_callback), "Cutouts && Ports")
 
+            for widget in self.widgets.values():
+                if isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+                    widget.valueChanged.connect(self.update_min_max_values)
+                elif isinstance(widget, QComboBox):
+                    widget.currentIndexChanged.connect(self.update_min_max_values)
+
     def refresh_empty_state(self):
         item_count = self.manager_layout.count() - 1 # Subtract 1 because the label is part of the layout
 
@@ -643,7 +680,7 @@ class BuildUI:
     def print_to_console(self, message = "No message was provided!", type = "info"):
         from termcolor import colored
 
-        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey"}
+        colors = {"info": "blue", "warning": "yellow", "error": "red", "success": "green", "silenced": "dark_grey", "state_change": "magenta"}
 
         color = colors.get(type, "white")
 
