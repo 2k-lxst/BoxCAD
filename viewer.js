@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { STLLoader } from "three/addons/loaders/STLLoader.js";
-import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ViewHelper } from "three/addons/helpers/ViewHelper.js";
 import { InfiniteGridHelper } from "./libs/InfiniteGridHelper.js";
@@ -12,6 +12,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
 
 let autoFitEnabled = false;
 let scene, camera, renderer, currentMesh;
+let modelColor = 0xff0000;
 let measurementGroup = new THREE.Group();
 
 const loader = new STLLoader();
@@ -19,18 +20,18 @@ const loader = new STLLoader();
 window.loader = loader;
 
 // Toggle menu visibility
-const menuButton = document.getElementById('menu-button');
-const menu = document.getElementById('settings-menu');
+const menuButton = document.getElementById("menu-button");
+const menu = document.getElementById("settings-menu");
 
 menuButton.onclick = () => {
-    const isHidden = menu.classList.toggle('hidden');
+    const isHidden = menu.classList.toggle("hidden");
 
     menuButton.classList.toggle("is-open", !isHidden);
     menuButton.textContent = isHidden ? '≡' : '×';
 };
 
 // Reset camera
-document.getElementById('reset-cam').onclick = () => {
+document.getElementById("reset-cam").onclick = () => {
     fitCameraToObject(currentMesh, 0.7);
 };
 
@@ -301,12 +302,18 @@ renderer.autoClear = false;
 // Initialize ViewHelper
 const viewHelper = new ViewHelper(camera, renderer.domElement);
 
-document.getElementById('helper-toggle').onchange = (e) => {
+document.getElementById("helper-toggle").onchange = (e) => {
     viewHelper.visible = e.target.checked;
 };
 
-document.getElementById('dimensions-toggle').onchange = (e) => {
+document.getElementById("dimensions-toggle").onchange = (e) => {
     measurementGroup.visible = e.target.checked;
+};
+
+document.getElementById("model-color").onchange = (e) => {
+    modelColor = parseInt(e.target.value.replace("#", "0x"), 16);
+
+    if (currentMesh) currentMesh.material.color.setHex(modelColor);
 };
 
 // Add and configure a new ambient light
@@ -320,7 +327,7 @@ dirLight.position.set(100, -100, 150);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// Update your Directional Light to cast shadows
+// Update directional light to cast shadows
 dirLight.castShadow = true;
 
 // Prevents flickering on the box surface
@@ -390,7 +397,7 @@ fetch("./model.stl")
                 geometry.boundingBox.getSize(size);
 
                 // Create mesh
-                const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }))
+                const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: modelColor }))
                 currentMesh = mesh;
 
                 // Shift the geometry up so the bottom is the pivot
@@ -418,7 +425,7 @@ fetch("./model.stl")
         }
     })
     .catch(err => {
-        console.log("[WARNING] Ignoring initial 404 - Grid should still show.");
+        console.log("[WARNING] Ignoring initial 404 - grid should still show.");
     });
 
 // Handle the resizing of the window
@@ -448,7 +455,7 @@ window.updateMesh = function(url) {
         const size = new THREE.Vector3();
         geometry.boundingBox.getSize(size);
 
-        currentMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xff0000 }));
+        currentMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: modelColor }));
 
         geometry.translate(-size.x / 2, size.y / 2, size.z / 2);
         currentMesh.position.set(0, 0, 0);

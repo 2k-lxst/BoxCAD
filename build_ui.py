@@ -207,6 +207,7 @@ class BuildUI:
         self.width_input.setRange(20, 400)
         self.width_input.setValue(50)
         self.width_input.setSuffix(" mm")
+        self.width_input.setToolTip("The outer width of the enclosure")
 
         layout.addRow("Outer Width (X):", self.width_input)
         self.widgets["outer_width"] = self.width_input
@@ -216,6 +217,7 @@ class BuildUI:
         self.length_input.setRange(20, 400)
         self.length_input.setValue(50)
         self.length_input.setSuffix(" mm")
+        self.length_input.setToolTip("The outer length of the enclosure")
 
         layout.addRow("Outer Length (Y):", self.length_input)
         self.widgets["outer_length"] = self.length_input
@@ -225,6 +227,7 @@ class BuildUI:
         self.height_input.setRange(15, 400)
         self.height_input.setValue(25)
         self.height_input.setSuffix(" mm")
+        self.height_input.setToolTip("The outer height of the enclosure")
 
         layout.addRow("Outer Height (Z):", self.height_input)
         self.widgets["outer_height"] = self.height_input
@@ -232,18 +235,21 @@ class BuildUI:
         self.wall_thickness_input = QDoubleSpinBox()
         self.wall_thickness_input.setMinimum(1)
         self.wall_thickness_input.setSuffix(" mm")
+        self.wall_thickness_input.setToolTip("The wall thickness of the enclosure")
 
         layout.addRow("Wall Thickness:", self.wall_thickness_input)
         self.widgets["wall_thickness"] = self.wall_thickness_input
 
-        self.side_radius_input = QDoubleSpinBox()
-        self.side_radius_input.setSuffix(" mm")
+        self.corner_radius_input = QDoubleSpinBox()
+        self.corner_radius_input.setSuffix(" mm")
+        self.corner_radius_input.setToolTip("Rounds the corners of the enclosure")
 
-        layout.addRow("Side Radius:", self.side_radius_input)
-        self.widgets["side_radius"] = self.side_radius_input
+        layout.addRow("Corner Radius:", self.corner_radius_input)
+        self.widgets["corner_radius"] = self.corner_radius_input
 
         self.edge_rounding_input = QDoubleSpinBox()
         self.edge_rounding_input.setSuffix(" mm")
+        self.edge_rounding_input.setToolTip("Rounds the edges of the enclosure")
 
         layout.addRow("Edge Rounding:", self.edge_rounding_input)
         self.widgets["edge_rounding"] = self.edge_rounding_input
@@ -258,7 +264,7 @@ class BuildUI:
         h = self.height_input.value()
 
         t = self.wall_thickness_input.value()
-        r = self.side_radius_input.value()
+        r = self.corner_radius_input.value()
 
         i_d = self.screwpost_inner_diameter_input.value()
 
@@ -267,7 +273,7 @@ class BuildUI:
         self.wall_thickness_input.setRange(0.5, max(0.5, max_wall_thickness))
 
         max_side_radius = (min(w, l) / 2.0) - 0.1
-        self.side_radius_input.setMaximum(max(0.0, max_side_radius))
+        self.corner_radius_input.setMaximum(max(0.0, max_side_radius))
 
         max_inset = (min(w, l) / 2.0) - 2.0
         self.screwpost_inset_input.setMaximum(max(1.0, max_inset))
@@ -304,6 +310,7 @@ class BuildUI:
 
         # Lid
         invert_lid_checkbox = QCheckBox()
+        invert_lid_checkbox.setToolTip("Inverts the lid (useful for 3D printing)")
 
         layout.addRow("Invert Lid (for 3D printing):", invert_lid_checkbox)
         self.widgets["invert_lid"] = invert_lid_checkbox
@@ -311,6 +318,7 @@ class BuildUI:
         self.lip_height_input = QDoubleSpinBox()
         self.lip_height_input.setRange(5, 200)
         self.lip_height_input.setSuffix(" mm")
+        self.lip_height_input.setToolTip("The lip height of the lid")
 
         layout.addRow("Lip Height:", self.lip_height_input)
         self.widgets["lip_height"] = self.lip_height_input
@@ -319,6 +327,7 @@ class BuildUI:
         self.screwpost_inset_input.setRange(1, 50)
         self.screwpost_inset_input.setValue(5)
         self.screwpost_inset_input.setSuffix(" mm")
+        self.screwpost_inset_input.setToolTip("The inset of the screwposts (relative to the inner wall)")
 
         layout.addRow("Screwpost Inset:", self.screwpost_inset_input)
         self.widgets["screwpost_inset"] = self.screwpost_inset_input
@@ -422,7 +431,7 @@ class BuildUI:
         self.pcb_screwposts_coordinates_input.setMaximumHeight(150)
         self.pcb_screwposts_coordinates_input.setMaximumWidth(170)
         self.pcb_screwposts_coordinates_input.setPlaceholderText(
-            "X, Y (one per line)\n\n"
+            "X, Y (one per line, in mm)\n\n"
             "Example:\n"
             "12.0, 15.5\n"
             "45, 10.05"

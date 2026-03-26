@@ -70,8 +70,9 @@ class GeometryTask(QtCore.QRunnable):
             p_outerHeight = p["outer_height"]
 
             p_wallThickness = p["wall_thickness"]
-            p_sideRadius = p["side_radius"]
+            p_cornerRadius = p["corner_radius"]
             p_edgeRounding = p["edge_rounding"]
+            p_floorThickness = 2.0
 
             p_holeType = p["hole_type"]
             p_invertLid = p["invert_lid"]
@@ -100,24 +101,24 @@ class GeometryTask(QtCore.QRunnable):
 
             limit = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.0 - 0.1
 
-            safe_side = min(p_sideRadius, limit)
+            safe_side = min(p_cornerRadius, limit)
             safe_edge = min(p_edgeRounding, limit)
 
             if safe_side > 0.01 or safe_edge > 0.01:
                 try:
                     if safe_side > safe_edge:
-                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                        outer_shell = outer_shell.edges("|Z").fillet(p_cornerRadius)
                         outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
                     else:
                         outer_shell = outer_shell.edges("#Z").fillet(p_edgeRounding)
-                        outer_shell = outer_shell.edges("|Z").fillet(p_sideRadius)
+                        outer_shell = outer_shell.edges("|Z").fillet(p_cornerRadius)
                 except Exception:
                     # Use the signal bridge to send the message back to the main window
                     self.signals.error_occurred.emit("Fillet math failed, skipping rounding to prevent crash.", "warning")
 
             # Prevent negative/zero inner fillets
             # The inner radius must be at least 0.1 to prevent BRep errors
-            safe_inner_radius = max(0.1, p_sideRadius - p_wallThickness)
+            safe_inner_radius = max(0.1, p_cornerRadius - p_wallThickness)
 
             # Prevent wall thickness from exceeding box size
             # Wall thickness can't be more than half the smallest dimension
@@ -126,10 +127,10 @@ class GeometryTask(QtCore.QRunnable):
 
             inner_shell = (
                 outer_shell.faces("<Z")
-                .workplane(actual_wall_thickness, True)
+                .workplane(p_floorThickness, True)
                 .rect((p_outerWidth - 2.0 * actual_wall_thickness), (p_outerLength - 2.0 * actual_wall_thickness))
                 .extrude(
-                    (p_outerHeight - 2.0 * actual_wall_thickness), False
+                    (p_outerHeight - actual_wall_thickness - p_floorThickness), False
                 )
             )
 
@@ -185,7 +186,7 @@ class GeometryTask(QtCore.QRunnable):
                         box = (
                             cq.Workplane("XY").add(box.val())
                             .faces("<Z")
-                            .workplane(offset=actual_wall_thickness, invert=True)
+                            .workplane(offset=p_floorThickness, invert=True)
                             .center(sx, sy)
                             .circle(p_pcbScrewpostsOuterDiameter / 2.0)
                             .extrude(p_pcbScrewpostsHeight)
@@ -194,7 +195,7 @@ class GeometryTask(QtCore.QRunnable):
                         box = (
                             cq.Workplane("XY").add(box.val())
                             .faces("<Z")
-                            .workplane(offset=actual_wall_thickness, invert=True)
+                            .workplane(offset=p_floorThickness, invert=True)
                             .center(sx, sy)
                             .circle(p_pcbScrewpostsInnerDiameter / 2.0)
                             .cutBlind(p_pcbScrewpostsHeight)
@@ -204,8 +205,8 @@ class GeometryTask(QtCore.QRunnable):
 
             box = cq.Workplane("XY").add(box.val())
 
-            screwpost_width = p_outerWidth - 2.0 * p_screwpostInset
-            screwpost_length = p_outerLength - 2.0 * p_screwpostInset
+            screwpost_width = (p_outerWidth - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
+            screwpost_length = (p_outerLength - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
 
             box = (
                 box.faces(">Z")
