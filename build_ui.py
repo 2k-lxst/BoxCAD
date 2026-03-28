@@ -335,6 +335,7 @@ class BuildUI:
         self.screwpost_outer_diameter_input = QDoubleSpinBox()
         self.screwpost_outer_diameter_input.setRange(5, 200)
         self.screwpost_outer_diameter_input.setSuffix(" mm")
+        self.screwpost_outer_diameter_input.setToolTip("The outer diameter of the screwposts")
 
         layout.addRow("Screwpost Outer Diameter:", self.screwpost_outer_diameter_input)
         self.widgets["screwpost_outer_diameter"] = self.screwpost_outer_diameter_input
@@ -343,6 +344,7 @@ class BuildUI:
         self.screwpost_inner_diameter_input.setRange(1, 10)
         self.screwpost_inner_diameter_input.setValue(3) # Default to M3 screws (3mm)
         self.screwpost_inner_diameter_input.setSuffix(" mm")
+        self.screwpost_inner_diameter_input.setToolTip("The inner diameter of the screwposts")
 
         layout.addRow("Screwpost Inner Diameter:", self.screwpost_inner_diameter_input)
         self.widgets["screwpost_inner_diameter"] = self.screwpost_inner_diameter_input
@@ -357,6 +359,7 @@ class BuildUI:
         # Bore
         self.hole_type = QComboBox()
         self.hole_type.addItems(["None (no modifications)", "Counterbore", "Countersink"])
+        self.hole_type.setToolTip("Choose which modification to apply to the screwhole (None, Counterbore, Countersink)")
 
         layout.addRow("Hole type:", self.hole_type)
         self.widgets["hole_type"] = self.hole_type
@@ -365,6 +368,7 @@ class BuildUI:
         self.bore_diameter_input.setRange(0, 200)
         self.bore_diameter_input.setSuffix(" mm")
         self.bore_diameter_input.setDisabled(True)
+        self.bore_diameter_input.setToolTip("The diameter of the bore, if using counterbore")
 
         layout.addRow("Bore Diameter:", self.bore_diameter_input)
         self.widgets["bore_diameter"] = self.bore_diameter_input

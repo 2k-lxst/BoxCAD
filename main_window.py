@@ -218,9 +218,19 @@ class GeometryTask(QtCore.QRunnable):
                 .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness), True)
             )
 
-            (lid, bottom) = (
-                box.faces(">Z")
-                .workplane(-p_wallThickness - p_lipHeight)
+            # (lid, bottom) = (
+            #     box.faces(">Z")
+            #     .workplane(-p_wallThickness - p_lipHeight)
+            #     .split(keepTop=True, keepBottom=True)
+            #     .all()
+            # )
+
+            # Assume box is your enclosure
+            top_face = box.faces(">Z").val()  # the very top face
+            lid_plane_z = top_face.Center().z - p_lipHeight  # plane at lid-bottom interface
+
+            lid, bottom = (
+                box.workplane(offset=lid_plane_z - box.val().BoundingBox().zmin)
                 .split(keepTop=True, keepBottom=True)
                 .all()
             )
