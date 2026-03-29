@@ -125,13 +125,13 @@ class GeometryTask(QtCore.QRunnable):
             max_wall_thickness = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.1
             actual_wall_thickness = min(p_wallThickness, max_wall_thickness)
 
+            inner_shell_height = (p_outerHeight + p_lipHeight) - p_floorThickness - actual_wall_thickness
+
             inner_shell = (
-                outer_shell.faces("<Z")
-                .workplane(p_floorThickness, True)
+                cq.Workplane("XY")
+                .workplane(offset=p_floorThickness)
                 .rect((p_outerWidth - 2.0 * actual_wall_thickness), (p_outerLength - 2.0 * actual_wall_thickness))
-                .extrude(
-                    (p_outerHeight - actual_wall_thickness - p_floorThickness), False
-                )
+                .extrude(inner_shell_height)
             )
 
             inner_shell = inner_shell.edges("|Z").fillet(safe_inner_radius)
@@ -210,36 +210,29 @@ class GeometryTask(QtCore.QRunnable):
 
             box = (
                 box.faces(">Z")
-                .workplane(-p_wallThickness)
+                .workplane(-actual_wall_thickness)
                 .rect(screwpost_width, screwpost_length, forConstruction=True)
                 .vertices()
                 .circle(p_screwpostOuterDiameter / 2.0)
                 .circle(p_screwpostInnerDiameter / 2.0)
-                .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness), True)
+                .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness - p_floorThickness), True)
             )
 
-            # (lid, bottom) = (
-            #     box.faces(">Z")
-            #     .workplane(-p_wallThickness - p_lipHeight)
-            #     .split(keepTop=True, keepBottom=True)
-            #     .all()
-            # )
+            print(f"split landing at Z: {box.faces('>Z').val().Center().z - p_lipHeight}")
+            print(f"inner shell top at Z: {p_outerHeight - actual_wall_thickness - p_floorThickness}")
 
-            # Assume box is your enclosure
-            top_face = box.faces(">Z").val()  # the very top face
-            lid_plane_z = top_face.Center().z - p_lipHeight  # plane at lid-bottom interface
-
-            lid, bottom = (
-                box.workplane(offset=lid_plane_z - box.val().BoundingBox().zmin)
+            (lid, bottom) = (
+                box.faces(">Z")
+                .workplane(-p_lipHeight)
                 .split(keepTop=True, keepBottom=True)
                 .all()
             )
 
-            lowerLid = lid.translate((0, 0, -p_lipHeight))
-            cutLip = lowerLid.cut(bottom)
+            # lowerLid = lid.translate((0, 0, -p_lipHeight))
+            # cutLip = lowerLid.cut(bottom)
 
             screwHoleCenters = (
-                cq.Workplane("XY").add(cutLip.val())
+                cq.Workplane("XY").add(lid.val())
                 .faces(">Z")
                 .workplane()
                 .rect(screwpost_width, screwpost_length, forConstruction=True)
@@ -268,7 +261,8 @@ class GeometryTask(QtCore.QRunnable):
 
             # Translate after holes are drilled
             topOfLid = topOfLid.translate(
-                (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
+                # (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
+                (p_outerWidth + p_wallThickness, 0, -p_outerHeight)
             )
 
             if p_invertLid:
