@@ -75,6 +75,7 @@ class GeometryTask(QtCore.QRunnable):
             p_floorThickness = 2.0
 
             p_holeType = p["hole_type"]
+            p_lidConnectionType = p["lid_connection_type"]
             p_invertLid = p["invert_lid"]
             p_lipHeight = p["lip_height"]
             p_screwpostInset = p["screwpost_inset"]
@@ -125,7 +126,9 @@ class GeometryTask(QtCore.QRunnable):
             max_wall_thickness = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.1
             actual_wall_thickness = min(p_wallThickness, max_wall_thickness)
 
-            inner_shell_height = (p_outerHeight + p_lipHeight) - p_floorThickness - actual_wall_thickness
+            lid_roof_thickness = min(p_floorThickness, p_lipHeight - 0.5)
+
+            inner_shell_height = (p_outerHeight + p_lipHeight) - p_floorThickness - lid_roof_thickness
 
             inner_shell = (
                 cq.Workplane("XY")
@@ -201,7 +204,7 @@ class GeometryTask(QtCore.QRunnable):
                             .cutBlind(p_pcbScrewpostsHeight)
                         )
                     except Exception as e:
-                        self.signals.error_occurred.emit(f"Standoff parse error on '{line}': {e}", "warning")
+                        self.signals.error_occurred.emit(f"PCB screwpost parse error on '{line}': {e}", "warning")
 
             box = cq.Workplane("XY").add(box.val())
 
@@ -210,16 +213,13 @@ class GeometryTask(QtCore.QRunnable):
 
             box = (
                 box.faces(">Z")
-                .workplane(-actual_wall_thickness)
+                .workplane(-lid_roof_thickness)
                 .rect(screwpost_width, screwpost_length, forConstruction=True)
                 .vertices()
                 .circle(p_screwpostOuterDiameter / 2.0)
                 .circle(p_screwpostInnerDiameter / 2.0)
-                .extrude(-1.0 * (p_outerHeight + p_lipHeight - p_wallThickness - p_floorThickness), True)
+                .extrude(-(inner_shell_height - p_lipHeight), True)
             )
-
-            print(f"split landing at Z: {box.faces('>Z').val().Center().z - p_lipHeight}")
-            print(f"inner shell top at Z: {p_outerHeight - actual_wall_thickness - p_floorThickness}")
 
             (lid, bottom) = (
                 box.faces(">Z")
@@ -227,6 +227,15 @@ class GeometryTask(QtCore.QRunnable):
                 .split(keepTop=True, keepBottom=True)
                 .all()
             )
+
+            if p_lidConnectionType == "Lip":
+                lowerLid = lid.translate((0, 0, -p_lipHeight))
+
+                lipPlug = lowerLid.intersect(bottom)
+
+                lid = lid.union(lipPlug)
+
+                bottom = bottom.cut(lipPlug)
 
             # lowerLid = lid.translate((0, 0, -p_lipHeight))
             # cutLip = lowerLid.cut(bottom)

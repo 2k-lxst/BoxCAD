@@ -308,6 +308,13 @@ class BuildUI:
     def build_assembly_page(self):
         page, layout = self.create_form_page()
 
+        self.lid_connection_type = QComboBox()
+        self.lid_connection_type.addItems(["Simple (no lip)", "Lip"])
+        self.lid_connection_type.setToolTip("Choose which connection type should be used to (None, Counterbore, Countersink)")
+
+        layout.addRow("Lid Connection Type:", self.lid_connection_type)
+        self.widgets["lid_connection_type"] = self.lid_connection_type
+
         # Lid
         invert_lid_checkbox = QCheckBox()
         invert_lid_checkbox.setToolTip("Inverts the lid (useful for 3D printing)")
