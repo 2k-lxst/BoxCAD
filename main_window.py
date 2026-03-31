@@ -218,9 +218,8 @@ class GeometryTask(QtCore.QRunnable):
             # TODO: Fix comments
             # TODO: Replace the floor_z with floor thickness
 
-            lid_top_z = box.val().BoundingBox().zmax  # top Z of lid
-            floor_z = 0  # assuming bottom of enclosure is at Z=0
-            pillar_height = lid_top_z - floor_z
+            lid_top_z = box.val().BoundingBox().zmax
+            pillar_height = lid_top_z - p_floorThickness
 
             box = (
                 box.faces(">Z")
@@ -243,36 +242,37 @@ class GeometryTask(QtCore.QRunnable):
                 lip_clearance = 0.2
                 lip_wall = 1.2
 
-                lip_outer_w = p_outerWidth - 2.0 * actual_wall_thickness
-                lip_outer_l = p_outerLength - 2.0 * actual_wall_thickness
+                lip_outer_width = p_outerWidth - 2.0 * actual_wall_thickness
+                lip_outer_length = p_outerLength - 2.0 * actual_wall_thickness
 
-                lip_inner_w = lip_outer_w - 2.0 * lip_wall
-                lip_inner_l = lip_outer_l - 2.0 * lip_wall
+                lip_inner_width = lip_outer_width - 2.0 * lip_wall
+                lip_inner_length = lip_outer_length - 2.0 * lip_wall
 
-                if lip_inner_w > 1 and lip_inner_l > 1:
+                if lip_inner_width > 1 and lip_inner_length > 1:
                     # Create lip at origin
                     lip = (
                         cq.Workplane("XY")
-                        .rect(lip_outer_w, lip_outer_l)
-                        .rect(lip_inner_w, lip_inner_l)
+                        .rect(lip_outer_width, lip_outer_length)
+                        .rect(lip_inner_width, lip_inner_length)
                         .extrude(p_lipHeight)
                     )
 
-                    # Attach lip to lid, but **keep lid origin unchanged**
+                    # Attach lip to lid, but keep the lip origin unchanged
                     lid = lid.union(lip.translate((0, 0, -p_lipHeight + p_outerHeight)))
 
                     # Cut bottom for clearance
-                    lip_cut = (
+                    lip_cutout = (
                         cq.Workplane("XY")
-                        .rect(lip_outer_w + lip_clearance, lip_outer_l + lip_clearance)
+                        .rect(lip_outer_width + lip_clearance, lip_outer_length + lip_clearance)
                         .rect(
-                            max(1, lip_inner_w - lip_clearance),
-                            max(1, lip_inner_l - lip_clearance)
+                            max(1, lip_inner_width - lip_clearance),
+                            max(1, lip_inner_length - lip_clearance)
                         )
                         .extrude(p_lipHeight + 0.2)
                         .translate((0, 0, -p_lipHeight))
                     )
-                    bottom = bottom.cut(lip_cut)
+
+                    bottom = bottom.cut(lip_cutout)
 
                     # Move the enclosure down because the lip pushes it up
                     bottom = bottom.translate((0, 0, -p_lipHeight))
