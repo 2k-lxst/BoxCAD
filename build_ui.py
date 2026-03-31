@@ -254,6 +254,10 @@ class BuildUI:
         layout.addRow("Edge Rounding:", self.edge_rounding_input)
         self.widgets["edge_rounding"] = self.edge_rounding_input
 
+        # Define the lid roof thickness
+        self.lid_roof_thickness = 2.0
+        self.widgets["lid_roof_thickness"] = self.lid_roof_thickness
+
         self.add_vertical_spacer(layout)
 
         return page
@@ -264,7 +268,6 @@ class BuildUI:
         h = self.height_input.value()
 
         t = self.wall_thickness_input.value()
-        r = self.corner_radius_input.value()
 
         i_d = self.screwpost_inner_diameter_input.value()
 
@@ -278,21 +281,18 @@ class BuildUI:
         max_inset = (min(w, l) / 2.0) - 2.0
         self.screwpost_inset_input.setMaximum(max(1.0, max_inset))
 
-        max_bore_depth = t - 2
+        max_bore_depth = self.lid_roof_thickness
         self.bore_depth_input.setMaximum(max(0, max_bore_depth))
 
         max_edge_round = (h / 2.0) - 0.5
         self.edge_rounding_input.setMaximum(max(0, max_edge_round))
-
-        max_lip = h - (t * 2.0) - 2.0
-        self.lip_height_input.setMaximum(max(1.0, max_lip))
 
         if self.hole_type.currentText() == "None (no modifications)":
             self.bore_diameter_input.setDisabled(True)
             self.bore_depth_input.setDisabled(True)
             self.countersink_diameter_input.setDisabled(True)
             self.countersink_angle_input.setDisabled(True)
-        if self.hole_type.currentText() == "Counterbore":
+        elif self.hole_type.currentText() == "Counterbore":
             self.bore_diameter_input.setEnabled(True)
             self.bore_depth_input.setEnabled(True)
             self.countersink_diameter_input.setDisabled(True)

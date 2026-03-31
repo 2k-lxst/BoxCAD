@@ -55,6 +55,9 @@ class WorkerSignals(QtCore.QObject):
     result_ready = QtCore.Signal(object)
     error_occurred = QtCore.Signal(str, str)
 
+# TODO: Fix comments
+# TODO: Clean up the code!
+
 class GeometryTask(QtCore.QRunnable):
     def __init__(self, params):
         super().__init__()
@@ -73,6 +76,7 @@ class GeometryTask(QtCore.QRunnable):
             p_cornerRadius = p["corner_radius"]
             p_edgeRounding = p["edge_rounding"]
             p_floorThickness = 2.0
+            p_lidRoofThickness = 2.0
 
             p_holeType = p["hole_type"]
             p_lidConnectionType = p["lid_connection_type"]
@@ -211,6 +215,13 @@ class GeometryTask(QtCore.QRunnable):
             screwpost_width = (p_outerWidth - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
             screwpost_length = (p_outerLength - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
 
+            # TODO: Fix comments
+            # TODO: Replace the floor_z with floor thickness
+
+            lid_top_z = box.val().BoundingBox().zmax  # top Z of lid
+            floor_z = 0  # assuming bottom of enclosure is at Z=0
+            pillar_height = lid_top_z - floor_z
+
             box = (
                 box.faces(">Z")
                 .workplane(-lid_roof_thickness)
@@ -218,7 +229,7 @@ class GeometryTask(QtCore.QRunnable):
                 .vertices()
                 .circle(p_screwpostOuterDiameter / 2.0)
                 .circle(p_screwpostInnerDiameter / 2.0)
-                .extrude(-(inner_shell_height - p_lipHeight), True)
+                .extrude(-pillar_height, True)
             )
 
             (lid, bottom) = (
@@ -229,16 +240,42 @@ class GeometryTask(QtCore.QRunnable):
             )
 
             if p_lidConnectionType == "Lip":
-                lowerLid = lid.translate((0, 0, -p_lipHeight))
+                lip_clearance = 0.2
+                lip_wall = 1.2
 
-                lipPlug = lowerLid.intersect(bottom)
+                lip_outer_w = p_outerWidth - 2.0 * actual_wall_thickness
+                lip_outer_l = p_outerLength - 2.0 * actual_wall_thickness
 
-                lid = lid.union(lipPlug)
+                lip_inner_w = lip_outer_w - 2.0 * lip_wall
+                lip_inner_l = lip_outer_l - 2.0 * lip_wall
 
-                bottom = bottom.cut(lipPlug)
+                if lip_inner_w > 1 and lip_inner_l > 1:
+                    # Create lip at origin
+                    lip = (
+                        cq.Workplane("XY")
+                        .rect(lip_outer_w, lip_outer_l)
+                        .rect(lip_inner_w, lip_inner_l)
+                        .extrude(p_lipHeight)
+                    )
 
-            # lowerLid = lid.translate((0, 0, -p_lipHeight))
-            # cutLip = lowerLid.cut(bottom)
+                    # Attach lip to lid, but **keep lid origin unchanged**
+                    lid = lid.union(lip.translate((0, 0, -p_lipHeight + p_outerHeight)))
+
+                    # Cut bottom for clearance
+                    lip_cut = (
+                        cq.Workplane("XY")
+                        .rect(lip_outer_w + lip_clearance, lip_outer_l + lip_clearance)
+                        .rect(
+                            max(1, lip_inner_w - lip_clearance),
+                            max(1, lip_inner_l - lip_clearance)
+                        )
+                        .extrude(p_lipHeight + 0.2)
+                        .translate((0, 0, -p_lipHeight))
+                    )
+                    bottom = bottom.cut(lip_cut)
+
+                    # Move the enclosure down because the lip pushes it up
+                    bottom = bottom.translate((0, 0, -p_lipHeight))
 
             screwHoleCenters = (
                 cq.Workplane("XY").add(lid.val())
