@@ -327,8 +327,11 @@ class BuildUI:
         self.lip_height_input.setSuffix(" mm")
         self.lip_height_input.setToolTip("The lip height of the lid")
 
-        layout.addRow("Lip Height:", self.lip_height_input)
-        self.widgets["lip_height"] = self.lip_height_input
+        # Create a separate label to, later, change it
+        self.lid_height_label = QLabel("Lid Height:")
+
+        layout.addRow(self.lid_height_label, self.lip_height_input)
+        self.widgets["lid_height"] = self.lip_height_input
 
         self.screwpost_inset_input = QDoubleSpinBox()
         self.screwpost_inset_input.setRange(1, 50)

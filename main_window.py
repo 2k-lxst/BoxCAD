@@ -81,7 +81,7 @@ class GeometryTask(QtCore.QRunnable):
             p_holeType = p["hole_type"]
             p_lidConnectionType = p["lid_connection_type"]
             p_invertLid = p["invert_lid"]
-            p_lipHeight = p["lip_height"]
+            p_lidHeight = p["lid_height"]
             p_screwpostInset = p["screwpost_inset"]
             p_screwpostOuterDiameter = p["screwpost_outer_diameter"]
             p_screwpostInnerDiameter = p["screwpost_inner_diameter"]
@@ -101,7 +101,7 @@ class GeometryTask(QtCore.QRunnable):
             outer_shell = (
                 cq.Workplane("XY")
                 .rect(p_outerWidth, p_outerLength)
-                .extrude(p_outerHeight + p_lipHeight)
+                .extrude(p_outerHeight + p_lidHeight)
             )
 
             limit = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.0 - 0.1
@@ -130,9 +130,9 @@ class GeometryTask(QtCore.QRunnable):
             max_wall_thickness = min(p_outerWidth, p_outerLength, p_outerHeight) / 2.1
             actual_wall_thickness = min(p_wallThickness, max_wall_thickness)
 
-            lid_roof_thickness = min(p_floorThickness, p_lipHeight - 0.5)
+            lid_roof_thickness = min(p_floorThickness, p_lidHeight - 0.5)
 
-            inner_shell_height = (p_outerHeight + p_lipHeight) - p_floorThickness - lid_roof_thickness
+            inner_shell_height = (p_outerHeight + p_lidHeight) - p_floorThickness - lid_roof_thickness
 
             inner_shell = (
                 cq.Workplane("XY")
@@ -233,7 +233,7 @@ class GeometryTask(QtCore.QRunnable):
 
             (lid, bottom) = (
                 box.faces(">Z")
-                .workplane(-p_lipHeight)
+                .workplane(-p_lidHeight)
                 .split(keepTop=True, keepBottom=True)
                 .all()
             )
@@ -254,11 +254,11 @@ class GeometryTask(QtCore.QRunnable):
                         cq.Workplane("XY")
                         .rect(lip_outer_width, lip_outer_length)
                         .rect(lip_inner_width, lip_inner_length)
-                        .extrude(p_lipHeight)
+                        .extrude(p_lidHeight)
                     )
 
                     # Attach lip to lid, but keep the lip origin unchanged
-                    lid = lid.union(lip.translate((0, 0, -p_lipHeight + p_outerHeight)))
+                    lid = lid.union(lip.translate((0, 0, -p_lidHeight + p_outerHeight)))
 
                     # Cut bottom for clearance
                     lip_cutout = (
@@ -268,14 +268,14 @@ class GeometryTask(QtCore.QRunnable):
                             max(1, lip_inner_width - lip_clearance),
                             max(1, lip_inner_length - lip_clearance)
                         )
-                        .extrude(p_lipHeight + 0.2)
-                        .translate((0, 0, -p_lipHeight))
+                        .extrude(p_lidHeight + 0.2)
+                        .translate((0, 0, -p_lidHeight))
                     )
 
                     bottom = bottom.cut(lip_cutout)
 
                     # Move the enclosure down because the lip pushes it up
-                    bottom = bottom.translate((0, 0, -p_lipHeight))
+                    bottom = bottom.translate((0, 0, -p_lidHeight))
 
             screwHoleCenters = (
                 cq.Workplane("XY").add(lid.val())
@@ -307,7 +307,7 @@ class GeometryTask(QtCore.QRunnable):
 
             # Translate after holes are drilled
             topOfLid = topOfLid.translate(
-                # (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lipHeight)
+                # (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lidHeight)
                 (p_outerWidth + p_wallThickness, 0, -p_outerHeight)
             )
 
@@ -588,6 +588,13 @@ class BoxCAD(QMainWindow):
                 params[k] = v.toPlainText()
 
         params["cutouts"] = self.ui_builder.cutouts
+
+        if params.get("lid_connection_type") == "Lip":
+            if hasattr(self.ui_builder, "lid_height_label"):
+                self.ui_builder.lid_height_label.setText("Lip Height:")
+        else:
+            if hasattr(self.ui_builder, "lid_height_label"):
+                self.ui_builder.lid_height_label.setText("Lid Height (Z):")
 
         # Create and connect the task
         task = GeometryTask(params)
