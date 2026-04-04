@@ -3,10 +3,12 @@
 
 import sys
 import os
+import shutil
 import json
 import webbrowser
 import platform
 import subprocess
+import struct
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
@@ -41,7 +43,7 @@ class ExportFormat(Enum):
 
 def resource_path(relative_path):
     """Get the absolute path to resource, works for developement enviroment and PyInstaller."""
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Path where the .exe lives
         base_path = os.path.dirname(sys.executable)
     else:
@@ -402,6 +404,10 @@ class BoxCAD(QMainWindow):
             f"Executable: {sys.executable}\nOS: {platform.system()} {platform.release()} ({platform.machine()})\n",
             "startup"
         )
+
+        if not os.path.isfile(resource_path("model.stl")):
+            shutil.copy(resource_path("startingModel.stl"), resource_path("model.stl"))
+            os.remove(resource_path("startingModel.stl"))
 
         # Initialize components
         self.ui_builder = BuildUI()
@@ -799,9 +805,15 @@ class BoxCAD(QMainWindow):
         self.viewer.browser.page().runJavaScript("window.hideLoader();")
 
     def on_render_error(self, message, type):
-        """Print error and hide loader"""
+        """Print error and show error message box"""
         self.print_to_console(message, type)
-        self.viewer.browser.page().runJavaScript("window.hideLoader();")
+
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle("Renderer Error")
+        msg.setText("The viewer renderer has encountered an error: {message}. Try restarting the app or creating a new issue on the GitHub repository page.")
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.exec()
 
     def init_project(self):
         self.ui_builder.project_initialized = True

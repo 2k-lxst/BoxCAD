@@ -1,81 +1,70 @@
 # --- Configuration ---
 $venvPath = ".\.venv\Scripts\python.exe"
+$distPath = "$PSScriptRoot\dist"
+$buildTemp = "$PSScriptRoot\build_temp"
+$specPath = "$PSScriptRoot\build_config"
+$splashPath = "$PSScriptRoot\assets\splash_screen_600x400.png"
+$addData = @(
+    "$PSScriptRoot\.venv\Lib\site-packages\casadi;casadi",
+    "$PSScriptRoot\ui;ui",
+    "$PSScriptRoot\viewer.html;.",
+    "$PSScriptRoot\viewer.css;.",
+    "$PSScriptRoot\viewer.js;.",
+    "$PSScriptRoot\assets;assets",
+    "$PSScriptRoot\libs;libs",
+    "$PSScriptRoot\startingModel.stl;."
+)
 
-# Safety check: Ensure the venv actually exists
-if (!(Test-Path $venvPath)) {
+# --- Safety Check ---
+if (-not (Test-Path $venvPath)) {
     Write-Host "❌ Error: Virtual environment not found at .\.venv" -ForegroundColor Red
     Write-Host "Please ensure you have a .venv folder in this directory."
     Read-Host "Press Enter to exit"
     exit
 }
 
-Write-Host "--- BoxCAD Build System ---" -ForegroundColor Cyan
-Write-Host "1) Build Main Window"
-Write-Host "2) Build Welcome Screen"
-Write-Host "3) Build Both"
+# --- Menu ---
+Write-Host "--- BoxCAD Build Script ---" -ForegroundColor Cyan
+Write-Host "1) Continue"
 Write-Host "q) Quit"
 $choice = Read-Host "Choose an option"
 
-$buildMain = $false
-$buildWelcome = $false
-
 switch ($choice) {
-    "1" { $buildMain = $true }
-    "2" { $buildWelcome = $true }
-    "3" { $buildMain = $true; $buildWelcome = $true }
+    "1" { $continue = $true }
     "q" { exit }
     Default { Write-Host "Invalid choice."; exit }
 }
 
-# --- Build Execution ---
+# --- Build Process ---
+if ($continue) {
+    Write-Host "`n🚀 Building BoxCAD..." -ForegroundColor Magenta
 
-if ($buildMain) {
-    Write-Host "`n🚀 Building BoxCAD-MainWindow..." -ForegroundColor Magenta
+    # Construct --add-data parameters
+    $addDataParams = $addData | ForEach-Object { "--add-data `"$_`"" }
 
-    # Using & $venvPath ensures we use the project's specific Python environment
-    & $venvPath -m PyInstaller --specpath "build_config" `
-        --workpath "build_temp" `
+    # Run PyInstaller
+    & $venvPath -m PyInstaller `
+        --specpath $specPath `
+        --workpath $buildTemp `
         --noconfirm `
         --onefile `
         --windowed `
-        --name "BoxCAD-MainWindow" `
-        --distpath "$PSScriptRoot/dist/" `
-        --splash "$PSScriptRoot/assets/splash_screen_600x400.png" `
-        --add-data "$PSScriptRoot/.venv/Lib/site-packages/casadi;casadi" `
-        --add-data "$PSScriptRoot/ui;ui" `
-        --add-data "$PSScriptRoot/viewer.html;." `
-        --add-data "$PSScriptRoot/viewer.css;." `
-        --add-data "$PSScriptRoot/viewer.js;." `
-        --add-data "$PSScriptRoot/assets;assets" `
-        --add-data "$PSScriptRoot/libs;libs" `
-        "$PSScriptRoot/main_window.py"
+        --name "BoxCAD" `
+        --distpath $distPath `
+        --splash $splashPath `
+        $addDataParams `
+        "$PSScriptRoot\main_window.py"
 }
 
-if ($buildWelcome) {
-    Write-Host "`n🚀 Building BoxCAD-WelcomeScreen..." -ForegroundColor Magenta
-
-    & $venvPath -m PyInstaller --specpath "$PSScriptRoot/build_config" `
-        --workpath "$PSScriptRoot/build_temp" `
-        --noconfirm `
-        --onefile `
-        --windowed `
-        --name "BoxCAD-WelcomeScreen" `
-        --distpath "$PSScriptRoot/dist/" `
-        --splash "$PSScriptRoot/assets/splash_screen_600x400.png" `
-        --add-data "$PSScriptRoot/ui;ui" `
-        "$PSScriptRoot/main.py"
-}
-
-# --- Cleanup Phase ---
-
+# --- Cleanup ---
 Write-Host "`n🧹 Cleaning up build artifacts..." -ForegroundColor Yellow
 
-if (Test-Path "build_temp") {
-    Remove-Item -Recurse -Force "build_temp"
+if (Test-Path $buildTemp) {
+    Remove-Item -Recurse -Force $buildTemp
 }
 
-if (Test-Path "build_config") {
-    Get-ChildItem "build_config" -Filter "*.spec" | Remove-Item -Force
+if (Test-Path $specPath) {
+    Get-ChildItem $specPath -Filter "*.spec" | Remove-Item -Force
 }
 
 Write-Host "`n✅ Build Process Complete!" -ForegroundColor Green
