@@ -14,9 +14,6 @@ The goal is speed, repeatability, and clean parametric control — especially fo
 - **True Parametric Design**
   Adjust length, width, height, and wall thickness. All dependent features — lids, screw holes, offsets — update automatically.
 
-- **Hardware Presets**
-  Built-in footprints for popular boards such as Arduino Uno, ESP32, and Raspberry Pi simplify mounting and alignment.
-
 - **Real-time 3D Preview**
   An OpenGL-accelerated viewport lets you instantly visualize changes as you tweak parameters.
 
@@ -32,7 +29,7 @@ BoxCAD is built entirely in Python using modern, well-supported libraries:
 - **Python 3.13.11**
 - **PySide6** – Native-looking cross-platform GUI
 - **CadQuery** – Industrial-grade parametric geometry kernel
-- **PyQtGraph** – High-performance 3D visualization
+- **Three.js** – High-performance 3D visualization
 
 ---
 
