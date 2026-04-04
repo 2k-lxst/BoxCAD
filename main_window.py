@@ -807,13 +807,7 @@ class BoxCAD(QMainWindow):
     def on_render_error(self, message, type):
         """Print error and show error message box"""
         self.print_to_console(message, type)
-
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Icon.Critical)
-        msg.setWindowTitle("Renderer Error")
-        msg.setText("The viewer renderer has encountered an error: {message}. Try restarting the app or creating a new issue on the GitHub repository page.")
-        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg.exec()
+        self.viewer.browser.page().runJavaScript("window.hideLoader();")
 
     def init_project(self):
         self.ui_builder.project_initialized = True
