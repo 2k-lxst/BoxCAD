@@ -8,7 +8,6 @@ import json
 import webbrowser
 import platform
 import subprocess
-import struct
 import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
@@ -78,7 +77,6 @@ class GeometryTask(QtCore.QRunnable):
             p_cornerRadius = p["corner_radius"]
             p_edgeRounding = p["edge_rounding"]
             p_floorThickness = 2.0
-            p_lidRoofThickness = 2.0
 
             p_holeType = p["hole_type"]
             p_lidConnectionType = p["lid_connection_type"]
@@ -218,7 +216,6 @@ class GeometryTask(QtCore.QRunnable):
             screwpost_length = (p_outerLength - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
 
             # TODO: Fix comments
-            # TODO: Replace the floor_z with floor thickness
 
             lid_top_z = box.val().BoundingBox().zmax
             pillar_height = lid_top_z - p_floorThickness
@@ -270,8 +267,8 @@ class GeometryTask(QtCore.QRunnable):
                             max(1, lip_inner_width - lip_clearance),
                             max(1, lip_inner_length - lip_clearance)
                         )
-                        .extrude(p_lidHeight + 0.2)
-                        .translate((0, 0, -p_lidHeight))
+                        .extrude(p_lidHeight)
+                        .translate((0, 0, -p_lidHeight + lip_clearance))
                     )
 
                     bottom = bottom.cut(lip_cutout)
@@ -307,16 +304,28 @@ class GeometryTask(QtCore.QRunnable):
                     p_outerHeight * 2
                 )
 
+            lid_z_offset = -p_outerHeight - (p_lidHeight if p_lidConnectionType == "Lip" else 0)
+
             # Translate after holes are drilled
             topOfLid = topOfLid.translate(
-                # (p_outerWidth + p_wallThickness, 0, p_wallThickness - p_outerHeight + p_lidHeight)
-                (p_outerWidth + p_wallThickness, 0, -p_outerHeight)
+                (p_outerWidth + p_wallThickness, 0, lid_z_offset)
             )
 
             if p_invertLid:
                 topOfLid = topOfLid.rotateAboutCenter((1, 0, 0), 180)
 
+                if (p_lidConnectionType == "Simple (no lip)"):
+                    lid_bbox = topOfLid.val().BoundingBox()
+                    bottom_bbox = bottom.val().BoundingBox()
+
+                    z_offset = lid_bbox.zmin - bottom_bbox.zmax
+
+                    # bottom = bottom.translate((0, 0, p_lidHeight / 2))
+                    bottom = bottom.translate((0, 0, z_offset))
+
             result = topOfLid.union(bottom)
+
+            print(bottom.val().BoundingBox().zlen)
 
             self.signals.result_ready.emit(result)
         except Exception as e:
