@@ -271,10 +271,8 @@ class GeometryTask(QtCore.QRunnable):
                         .translate((0, 0, -p_lidHeight + lip_clearance))
                     )
 
-                    bottom = bottom.cut(lip_cutout)
-
                     # Move the enclosure down because the lip pushes it up
-                    bottom = bottom.translate((0, 0, -p_lidHeight))
+                    bottom = bottom.translate((0, 0, -p_lidHeight * 2))
 
             screwHoleCenters = (
                 cq.Workplane("XY").add(lid.val())
@@ -312,20 +310,18 @@ class GeometryTask(QtCore.QRunnable):
             )
 
             if p_invertLid:
-                topOfLid = topOfLid.rotateAboutCenter((1, 0, 0), 180)
+                lid_center = topOfLid.val().BoundingBox().center
+
+                topOfLid = topOfLid.rotate(
+                    lid_center.toTuple(),
+                    (lid_center.x + 1, lid_center.y, lid_center.z),
+                    180
+                )
 
                 if (p_lidConnectionType == "Simple (no lip)"):
-                    lid_bbox = topOfLid.val().BoundingBox()
-                    bottom_bbox = bottom.val().BoundingBox()
-
-                    z_offset = lid_bbox.zmin - bottom_bbox.zmax
-
-                    # bottom = bottom.translate((0, 0, p_lidHeight / 2))
-                    bottom = bottom.translate((0, 0, z_offset))
+                    bottom = bottom.translate((0, 0, p_lidHeight / 2))
 
             result = topOfLid.union(bottom)
-
-            print(bottom.val().BoundingBox().zlen)
 
             self.signals.result_ready.emit(result)
         except Exception as e:
@@ -407,8 +403,11 @@ class BoxCAD(QMainWindow):
         except ImportError: # This error happens if running in a development enviroment (IDE)
             pass
 
+        header = f"Information: BoxCAD v{app_version}"
+
         self.print_to_console(
-            f"Information: BoxCAD v{app_version}\n============\n"
+            f"{header}\n"
+            f"{'=' * len(header)}\n"
             f"Python: {sys.version.split()[0]} ({platform.python_implementation()})\n"
             f"Executable: {sys.executable}\nOS: {platform.system()} {platform.release()} ({platform.machine()})\n",
             "startup"
