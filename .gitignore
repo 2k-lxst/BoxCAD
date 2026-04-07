@@ -27,3 +27,6 @@ main-window-build/
 *.toc
 *.manifest
 *.pyz
+
+# Old UI folder
+ui/old
