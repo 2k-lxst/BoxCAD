@@ -30,12 +30,14 @@ from ui.main_window_ui import Ui_MainWindow
 from build_ui import BuildUI, PortGuideDialog
 from enum import Enum, auto
 
+# The universal AppState enum
 class AppState(Enum):
     UNINITIALIZED = auto()
     INITIALIZING = auto()
     READY = auto()
     ERROR = auto()
 
+# The file ExportFormat enum
 class ExportFormat(Enum):
     STL = auto()
     STEP = auto()
@@ -55,9 +57,6 @@ class WorkerSignals(QtCore.QObject):
     # Signals must be defined on a QObject
     result_ready = QtCore.Signal(object)
     error_occurred = QtCore.Signal(str, str)
-
-# TODO: Fix comments
-# TODO: Clean up the code!
 
 class GeometryTask(QtCore.QRunnable):
     def __init__(self, params):
@@ -425,7 +424,8 @@ class BoxCAD(QMainWindow):
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer, self.show_port_guide)
 
         def unlock_ui():
-            # This reaches into the ui class and enables the specific button
+
+            # This reaches into the UI class and enables the specific button
             self.ui_builder.initialize_btn.setEnabled(True)
             self.ui_builder.initialize_btn.setToolTip("Click to begin your design")
             self.ui_builder.print_to_console("3D Viewer is ready!", "success")
