@@ -23,11 +23,11 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def get_bundle_dir():
-    """Retrieves the absolute path to the application root, ensuring asset compatibility between the standard Python environment and a PyInstaller frozen executable."""
+    """Retrieves the absolute path to the application root."""
     # If running as a bundled .exe
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # sys._MEIPASS is the temporary folder where PyInstaller unzips assets
-        return getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        return getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
 
     # If running in a development enviroment (IDE)
     return os.path.dirname(os.path.abspath(__file__))
@@ -37,7 +37,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
         """Override the default error printer to use the custom console."""
 
         if "favicon.ico" in self.path:
-            if hasattr(self.server, 'printer'):
+            if hasattr(self.server, "printer"):
                 self.server.printer(f"File not found - GET {self.path} HTTP/1.1", "silenced")
             return
 
@@ -58,7 +58,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
             print(message)
 
 class Bridge(QObject):
-    """Small helper class to recieve signals from JavaScript"""
+    """Small helper class to recieve signals from JavaScript."""
     def __init__(self, viewer):
         super().__init__()
         self.viewer = viewer
@@ -66,7 +66,7 @@ class Bridge(QObject):
     @Slot()
     def on_viewer_ready(self):
         # This is the function JavaScript will call
-        if hasattr(self.viewer, 'on_ready_callback'):
+        if hasattr(self.viewer, "on_ready_callback"):
             self.viewer.on_ready_callback()
 
 class ModelViewer(QFrame):
@@ -114,20 +114,20 @@ class ModelViewer(QFrame):
         self.pending_object = None
 
     def closeEvent(self, event):
-        """Stop the server when the widget is closed"""
+        """Stop the server when the widget is closed."""
         self.httpd.shutdown()
 
         super().closeEvent(event)
 
     def update_display(self, cq_object):
-        """Exports geometry and notifies the browser to reload the file via HTTP"""
+        """Exports geometry and notifies the browser to reload the file via HTTP."""
         self.pending_object = cq_object
         self.update_timer.start()
 
         if self.logger: self.logger("Model updated successfully!", "model_update")
 
     def _execute_update(self):
-        """The actual update happens here only after the user stops typing"""
+        """The actual update happens here only after the user stops typing."""
         if self.pending_object is None: return
 
         try:
@@ -166,5 +166,5 @@ class ModelViewer(QFrame):
         print(colored(f"[{type.upper()}] {message}", color))
 
     def set_on_ready_callback(self, callback_func):
-        """Pass a function here from your main app to run when JS is ready"""
+        """Pass a function here from your main app to run when JS is ready."""
         self.on_ready_callback = callback_func

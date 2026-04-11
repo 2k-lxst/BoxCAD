@@ -1,4 +1,4 @@
-# --- Configuration ---
+# Configuration
 $venvPath = ".\.venv\Scripts\python.exe"
 $distPath = "$PSScriptRoot\dist"
 $buildTemp = "$PSScriptRoot\build_temp"
@@ -15,7 +15,7 @@ $addData = @(
     "$PSScriptRoot\startingModel.stl;."
 )
 
-# --- Safety Check ---
+# Safety check
 if (-not (Test-Path $venvPath)) {
     Write-Host "❌ Error: Virtual environment not found at .\.venv" -ForegroundColor Red
     Write-Host "Please ensure you have a .venv folder in this directory."
@@ -23,7 +23,7 @@ if (-not (Test-Path $venvPath)) {
     exit
 }
 
-# --- Menu ---
+# Menu
 Write-Host "--- BoxCAD Build Script ---" -ForegroundColor Cyan
 Write-Host "1) Continue"
 Write-Host "q) Quit"
@@ -35,7 +35,7 @@ switch ($choice) {
     Default { Write-Host "Invalid choice."; exit }
 }
 
-# --- Build Process ---
+# Build process
 if ($continue) {
     Write-Host "`n🚀 Building BoxCAD..." -ForegroundColor Magenta
 
@@ -56,7 +56,7 @@ if ($continue) {
         "$PSScriptRoot\main_window.py"
 }
 
-# --- Cleanup ---
+# Cleanup
 Write-Host "`n🧹 Cleaning up build artifacts..." -ForegroundColor Yellow
 
 if (Test-Path $buildTemp) {

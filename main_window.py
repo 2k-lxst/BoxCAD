@@ -12,8 +12,9 @@ import cadquery as cq
 import PySide6 as PySide
 from PySide6 import QtWidgets
 from qtpy import QtCore
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QStandardPaths
 from qtpy.QtWidgets import QFileDialog, QMessageBox
+from datetime import datetime, timezone
 
 # Qt shortcut aliases
 QtWidgets = PySide.QtWidgets
@@ -164,7 +165,7 @@ class GeometryTask(QtCore.QRunnable):
                             .workplane()
                             .center(cutout["x"], cutout["y"])
                             .rect(cutout["width"], cutout["height"])
-                            .cutBlind(-100)
+                            .cutBlind(-p_wallThickness * 2)
                         )
                     elif cutout["shape"] == "Circle":
                         box = (
@@ -172,7 +173,7 @@ class GeometryTask(QtCore.QRunnable):
                             .workplane()
                             .center(cutout["x"], cutout["y"])
                             .circle(cutout["diameter"] / 2)
-                            .cutBlind(-100)
+                            .cutBlind(-p_wallThickness * 2)
                         )
                 except Exception as e:
                     self.signals.error_occurred.emit(f"Cutout failed on {cutout["face"]}: {e}", "warning")
@@ -214,8 +215,6 @@ class GeometryTask(QtCore.QRunnable):
             screwpost_width = (p_outerWidth - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
             screwpost_length = (p_outerLength - 2.0 * actual_wall_thickness) - 2.0 * p_screwpostInset
 
-            # TODO: Fix comments
-
             lid_top_z = box.val().BoundingBox().zmax
             pillar_height = lid_top_z - p_floorThickness
 
@@ -237,7 +236,6 @@ class GeometryTask(QtCore.QRunnable):
             )
 
             if p_lidConnectionType == "Lip":
-                lip_clearance = 0.2
                 lip_wall = 1.2
 
                 lip_outer_width = p_outerWidth - 2.0 * actual_wall_thickness
@@ -255,20 +253,14 @@ class GeometryTask(QtCore.QRunnable):
                         .extrude(p_lidHeight)
                     )
 
+                    # Fillet the vertical edges of the lip
+                    try:
+                        lip = lip.edges("|Z").fillet(safe_inner_radius)
+                    except Exception:
+                        self.signals.error_occurred.emit("Lip fillet failed, skipping.", "warning")
+
                     # Attach lip to lid, but keep the lip origin unchanged
                     lid = lid.union(lip.translate((0, 0, -p_lidHeight + p_outerHeight)))
-
-                    # Cut bottom for clearance
-                    lip_cutout = (
-                        cq.Workplane("XY")
-                        .rect(lip_outer_width + lip_clearance, lip_outer_length + lip_clearance)
-                        .rect(
-                            max(1, lip_inner_width - lip_clearance),
-                            max(1, lip_inner_length - lip_clearance)
-                        )
-                        .extrude(p_lidHeight)
-                        .translate((0, 0, -p_lidHeight + lip_clearance))
-                    )
 
                     # Move the enclosure down because the lip pushes it up
                     bottom = bottom.translate((0, 0, -p_lidHeight * 2))
@@ -317,9 +309,6 @@ class GeometryTask(QtCore.QRunnable):
                     180
                 )
 
-                if (p_lidConnectionType == "Simple (no lip)"):
-                    bottom = bottom.translate((0, 0, p_lidHeight / 2))
-
             result = topOfLid.union(bottom)
 
             self.signals.result_ready.emit(result)
@@ -329,6 +318,11 @@ class GeometryTask(QtCore.QRunnable):
 class BoxCAD(QMainWindow):
     def __init__(self, project_path, app_version = "Unknown Version"):
         super().__init__()
+
+        app_data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        os.makedirs(app_data_dir, exist_ok=True)
+
+        self.recent_file_path = os.path.join(app_data_dir, "recentFiles.json")
 
         self.last_result = None
         self._loading = False
@@ -424,7 +418,6 @@ class BoxCAD(QMainWindow):
         self.ui_builder.populate_toolbox(self.ui.parametersToolBox, self.viewer, self.show_port_guide)
 
         def unlock_ui():
-
             # This reaches into the UI class and enables the specific button
             self.ui_builder.initialize_btn.setEnabled(True)
             self.ui_builder.initialize_btn.setToolTip("Click to begin your design")
@@ -441,7 +434,7 @@ class BoxCAD(QMainWindow):
 
         self.rebuild_timer = QtCore.QTimer()
         self.rebuild_timer.setSingleShot(True)
-        self.rebuild_timer.setInterval(200)
+        self.rebuild_timer.setInterval(500)
         self.rebuild_timer.timeout.connect(self.execute_thread_build)
 
     def show_port_guide(self):
@@ -461,7 +454,7 @@ class BoxCAD(QMainWindow):
         # Reset file state
         self.current_filepath = None
         self.current_filename = "Untitled project"
-        self.mark_saved()
+        self.mark_unsaved()
 
         # Reset all widgets to their default values
         for k, v in self.ui_builder.widgets.items():
@@ -603,13 +596,6 @@ class BoxCAD(QMainWindow):
 
         params["cutouts"] = self.ui_builder.cutouts
 
-        if params.get("lid_connection_type") == "Lip":
-            if hasattr(self.ui_builder, "lid_height_label"):
-                self.ui_builder.lid_height_label.setText("Lip Height:")
-        else:
-            if hasattr(self.ui_builder, "lid_height_label"):
-                self.ui_builder.lid_height_label.setText("Lid Height (Z):")
-
         # Create and connect the task
         task = GeometryTask(params)
         task.signals.result_ready.connect(self.on_render_success)
@@ -646,6 +632,8 @@ class BoxCAD(QMainWindow):
         else:
             path = self.current_filepath
 
+        self.update_recent_files(self.current_filepath)
+
         # Collect all widget values
         data = {}
 
@@ -661,7 +649,7 @@ class BoxCAD(QMainWindow):
 
         data["cutouts"] = self.ui_builder.cutouts
 
-        with open(path, 'w') as f: # type: ignore
+        with open(path, "w") as f: # type: ignore
             json.dump(data, f, indent=4)
             self.mark_saved()
             self.print_to_console(f"Project saved to {path}", "success")
@@ -681,7 +669,7 @@ class BoxCAD(QMainWindow):
                 return
 
         try:
-            with open(path, 'r') as f:
+            with open(path, "r") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError) as e:
             self.print_to_console(f"Failed to open project: {e}", "error")
@@ -795,25 +783,19 @@ class BoxCAD(QMainWindow):
     def mark_unsaved(self):
         if self._loading: return
 
-        title = self.windowTitle()
-
-        if not title.endswith("*"):
-            self.setWindowTitle(title + " *")
+        self.setWindowTitle(f"BoxCAD - {self.current_filename} *")
 
     def mark_saved(self):
-        title = self.windowTitle()
-
-        if title.endswith("*"):
-            self.setWindowTitle(title[:-2])
+        self.setWindowTitle(f"BoxCAD - {self.current_filename}")
 
     def on_render_success(self, result):
-        """Update 3D viewer and hide loader"""
+        """Update 3D viewer and hide loader."""
         self.last_result = result
         self.viewer.update_display(result)
         self.viewer.browser.page().runJavaScript("window.hideLoader();")
 
     def on_render_error(self, message, type):
-        """Print error and show error message box"""
+        """Print error and show error message box."""
         self.print_to_console(message, type)
         self.viewer.browser.page().runJavaScript("window.hideLoader();")
 
@@ -902,8 +884,60 @@ class BoxCAD(QMainWindow):
             pass
 
         elif self._state == AppState.ERROR:
-            # TODO: Call the viewer.html error handling
             pass
+
+    def keep_top_five(self, data):
+        return data[:5]
+
+    def save_recent_files(self, data):
+        with open(self.recent_file_path, "w") as file:
+            json.dump(data, file, indent=4) # Dump the new data into recentFiles.json
+
+        print(f"Recent file path: {self.recent_file_path}")
+
+    def load_recent_files(self):
+        # Load the recentFiles.json file safely. If it doesn't exist, create it.
+        if not os.path.exists(self.recent_file_path):
+            with open(self.recent_file_path, "w") as file:
+                json.dump([], file)
+
+            self.print_to_console("The recentFiles.json doesn't exist. It was created automatically.", "warning")
+
+            return []
+
+        try:
+            with open(self.recent_file_path, "r") as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            self.print_to_console("The recentFiles.json file is empty or corrupted!", "error")
+
+            return []
+
+    def update_recent_files(self, file_path):
+        data = self.load_recent_files()
+
+        # Normalize path
+        file_path = os.path.abspath(file_path)
+
+        # Remove existing entry with the same path
+        data = [item for item in data if item["filePath"] != file_path]
+
+        file_name = os.path.basename(file_path)
+        file_name_no_ext = os.path.splitext(file_name)[0]
+
+        # Add updated entry at the top
+        data.insert(0, {
+            "fileName": file_name,
+            "fileNameNoExt": file_name_no_ext,
+            "filePath": file_path,
+            "lastOpened": datetime.now(timezone.utc).isoformat()
+        })
+
+        # Trim
+        data = self.keep_top_five(data)
+
+        # Save
+        self.save_recent_files(data)
 
     def print_to_console(self, message="No message was provided!", type="info", show_tag=True):
         from termcolor import colored

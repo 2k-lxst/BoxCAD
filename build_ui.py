@@ -15,10 +15,13 @@ from qtpy.QtGui import QFont, QCursor
 class PortGuideDialog(QDialog):
     def __init__(self, parent=None, fill_callback=None):
         super().__init__(parent)
-        self.fill_callback = fill_callback  # ✅ store the callback
+        self.fill_callback = fill_callback  # Store the callback
+
+        # Setup the window
         self.setWindowTitle("Port Reference Guide")
         self.setMinimumSize(450, 500)
 
+        # Setup the layout
         layout = QVBoxLayout(self)
 
         header = QLabel("<h3>Global Port Reference</h3>")
@@ -27,11 +30,14 @@ class PortGuideDialog(QDialog):
         layout.addWidget(header)
         layout.addWidget(subtitle)
 
+        # Setup the table
         self.table = QTableWidget(14, 3)
         self.table.setHorizontalHeaderLabels(["Port Type", "Width (X)", "Height (Y)"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
 
+        # The port list
+        # Name, width, height
         ports = [
             ("USB Type-C / 4.0", 8.4, 2.6),
             ("USB 2.0 Standard-A", 12.0, 4.5),
@@ -65,6 +71,7 @@ class PortGuideDialog(QDialog):
         layout.addWidget(footer)
 
     def _add_fill_cell(self, row, col, value):
+        """Adds the cell for the fill button."""
         container = QWidget()
         cell_layout = QHBoxLayout(container)
         cell_layout.setContentsMargins(2, 2, 2, 2)
@@ -129,9 +136,6 @@ class BuildUI:
 
         return page, layout
 
-    # TODO: Add explainer tooltips to all parameters
-    # TODO: Add comments above each parameter to explain what the parameter does
-
     def build_welcome_page(self, viewer):
         """Creates the landing page for the toolbox."""
         page = QWidget()
@@ -187,15 +191,14 @@ class BuildUI:
 
         self.performance_warning.setWordWrap(True)
         self.performance_warning.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # Using a distinct "Warning Orange" color
-        self.performance_warning.setStyleSheet("color: #E68A00; font-size: 11px; margin-top: 5px;")
+        self.performance_warning.setStyleSheet("color: #E68A00; font-size: 11px; margin-top: 5px;") # Using a distinct warning orange color
 
         # Add to layout
-        layout.addWidget(explainer)             # Welcome text
-        layout.addWidget(self.initialize_btn)   # The button
-        layout.addWidget(self.performance_warning) # The warning label
-        layout.addStretch(1)                    # Pushes everything below it to the bottom
-        layout.addWidget(footer)                # Footer
+        layout.addWidget(explainer)                 # Welcome text
+        layout.addWidget(self.initialize_btn)       # The button
+        layout.addWidget(self.performance_warning)  # The warning label
+        layout.addStretch(1)                        # Pushes everything below it to the bottom
+        layout.addWidget(footer)                    # Footer
 
         return page
 
@@ -267,9 +270,9 @@ class BuildUI:
         l = self.length_input.value()
         h = self.height_input.value()
 
-        t = self.wall_thickness_input.value()
-
         i_d = self.screwpost_inner_diameter_input.value()
+        p_i_d = self.pcb_screwposts_inner_diameter_input.value()
+        p_o_d = self.pcb_screwposts_outer_diameter_input.value()
 
         absoulte_min_dimensions = min(w, l, h)
         max_wall_thickness = (absoulte_min_dimensions / 2.0) - 1.0
@@ -287,6 +290,11 @@ class BuildUI:
         max_edge_round = (h / 2.0) - 0.5
         self.edge_rounding_input.setMaximum(max(0, max_edge_round))
 
+        self.countersink_diameter_input.setMinimum(i_d + 1)
+
+        self.pcb_screwposts_inner_diameter_input.setMaximum(max(0.1, p_o_d - 0.5))
+        self.pcb_screwposts_outer_diameter_input.setMinimum(max(0.1, p_i_d + 0.5))
+
         if self.hole_type.currentText() == "None (no modifications)":
             self.bore_diameter_input.setDisabled(True)
             self.bore_depth_input.setDisabled(True)
@@ -302,8 +310,6 @@ class BuildUI:
             self.countersink_angle_input.setEnabled(True)
             self.bore_diameter_input.setDisabled(True)
             self.bore_depth_input.setDisabled(True)
-
-        self.countersink_diameter_input.setMinimum(i_d + 1)
 
     def build_assembly_page(self):
         page, layout = self.create_form_page()
@@ -327,10 +333,7 @@ class BuildUI:
         self.lip_height_input.setSuffix(" mm")
         self.lip_height_input.setToolTip("The lip height of the lid")
 
-        # Create a separate label to, later, change it
-        self.lid_height_label = QLabel("Lid Height:")
-
-        layout.addRow(self.lid_height_label, self.lip_height_input)
+        layout.addRow("Lid Height (Z):", self.lip_height_input)
         self.widgets["lid_height"] = self.lip_height_input
 
         self.screwpost_inset_input = QDoubleSpinBox()
@@ -378,7 +381,7 @@ class BuildUI:
         self.bore_diameter_input.setRange(0, 200)
         self.bore_diameter_input.setSuffix(" mm")
         self.bore_diameter_input.setDisabled(True)
-        self.bore_diameter_input.setToolTip("The diameter of the bore, if using counterbore")
+        self.bore_diameter_input.setToolTip("The diameter of the bore")
 
         layout.addRow("Bore Diameter:", self.bore_diameter_input)
         self.widgets["bore_diameter"] = self.bore_diameter_input
@@ -387,6 +390,7 @@ class BuildUI:
         self.bore_depth_input.setRange(0, 200)
         self.bore_depth_input.setSuffix(" mm")
         self.bore_depth_input.setDisabled(True)
+        self.bore_depth_input.setToolTip("The depth of the bore")
 
         layout.addRow("Bore Depth:", self.bore_depth_input)
         self.widgets["bore_depth"] = self.bore_depth_input
@@ -396,6 +400,7 @@ class BuildUI:
         self.countersink_diameter_input.setValue(self.screwpost_inner_diameter_input.value() + 1)
         self.countersink_diameter_input.setSuffix(" mm")
         self.countersink_diameter_input.setDisabled(True)
+        self.countersink_diameter_input.setToolTip("The diameter of the countersink")
 
         layout.addRow("Countersink Diameter:", self.countersink_diameter_input)
         self.widgets["countersink_diameter"] = self.countersink_diameter_input
@@ -405,6 +410,7 @@ class BuildUI:
         self.countersink_angle_input.setValue(90)
         self.countersink_angle_input.setSuffix(" °")
         self.countersink_angle_input.setDisabled(True)
+        self.countersink_angle_input.setToolTip("The angle of the countersink")
 
         layout.addRow("Countersink Angle:", self.countersink_angle_input)
         self.widgets["countersink_angle"] = self.countersink_angle_input
@@ -416,26 +422,29 @@ class BuildUI:
     def build_hardware_page(self):
         page, layout = self.create_form_page()
 
-        pcb_screwposts_outer_diameter_input = QDoubleSpinBox()
-        pcb_screwposts_outer_diameter_input.setRange(1, 20)
-        pcb_screwposts_outer_diameter_input.setValue(5)
-        pcb_screwposts_outer_diameter_input.setSuffix(" mm")
+        self.pcb_screwposts_outer_diameter_input = QDoubleSpinBox()
+        self.pcb_screwposts_outer_diameter_input.setRange(1, 20)
+        self.pcb_screwposts_outer_diameter_input.setValue(5)
+        self.pcb_screwposts_outer_diameter_input.setSuffix(" mm")
+        self.pcb_screwposts_outer_diameter_input.setToolTip("The outer diameter of the screwposts for the PCB")
 
-        layout.addRow("PCB Screwposts Outer Diameter:", pcb_screwposts_outer_diameter_input)
-        self.widgets["pcb_screwposts_outer_diameter"] = pcb_screwposts_outer_diameter_input
+        layout.addRow("PCB Screwposts Outer Diameter:", self.pcb_screwposts_outer_diameter_input)
+        self.widgets["pcb_screwposts_outer_diameter"] = self.pcb_screwposts_outer_diameter_input
 
-        pcb_screwposts_inner_diameter_input = QDoubleSpinBox()
-        pcb_screwposts_inner_diameter_input.setRange(1, 20)
-        pcb_screwposts_inner_diameter_input.setValue(3)
-        pcb_screwposts_inner_diameter_input.setSuffix(" mm")
+        self.pcb_screwposts_inner_diameter_input = QDoubleSpinBox()
+        self.pcb_screwposts_inner_diameter_input.setRange(1, 20)
+        self.pcb_screwposts_inner_diameter_input.setValue(3)
+        self.pcb_screwposts_inner_diameter_input.setSuffix(" mm")
+        self.pcb_screwposts_inner_diameter_input.setToolTip("The inner diameter of the screwposts for the PCB")
 
-        layout.addRow("PCB Screwposts Inner Diameter:", pcb_screwposts_inner_diameter_input)
-        self.widgets["pcb_screwposts_inner_diameter"] = pcb_screwposts_inner_diameter_input
+        layout.addRow("PCB Screwposts Inner Diameter:", self.pcb_screwposts_inner_diameter_input)
+        self.widgets["pcb_screwposts_inner_diameter"] = self.pcb_screwposts_inner_diameter_input
 
         pcb_screwposts_height_input = QDoubleSpinBox()
         pcb_screwposts_height_input.setRange(1, 50)
         pcb_screwposts_height_input.setValue(5)
         pcb_screwposts_height_input.setSuffix(" mm")
+        pcb_screwposts_height_input.setToolTip("The height of the screwposts for the PCB")
 
         layout.addRow("PCB Screwposts Height:", pcb_screwposts_height_input)
         self.widgets["pcb_screwposts_height"] = pcb_screwposts_height_input
@@ -446,13 +455,15 @@ class BuildUI:
         self.pcb_screwposts_coordinates_input.setMaximumWidth(170)
         self.pcb_screwposts_coordinates_input.setPlaceholderText(
             "X, Y (one per line, in mm)\n\n"
+            "The center of the box interior is the origin\n\n"
             "Example:\n"
             "12.0, 15.5\n"
             "45, 10.05"
         )
+        self.pcb_screwposts_coordinates_input.setToolTip("The position of the screwposts for the PCB")
 
         mono_font = QFont("Consolas", 10)
-        mono_font.setStyleHint(QFont.Monospace) # Fallback to any monospace if Consolas is missing
+        mono_font.setStyleHint(QFont.Monospace) # Fallback to any monospace font if Consolas is missing
 
         self.pcb_screwposts_coordinates_input.setFont(mono_font)
 

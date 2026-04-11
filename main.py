@@ -23,21 +23,23 @@ from datetime import datetime, timezone
 
 # Global app settings
 app_name = "BoxCAD"
-app_version_number = "0.1.0"
+app_version = "1.0.0"
 
 print("The program is running.")
-print(f"Welcome to {app_name} v{app_version_number}!\n")
+print(f"Welcome to BoxCAD v{app_version}!\n")
+
+header = f"Information: BoxCAD v{app_version}"
+
 print(
-    "Information:\n"
-    "============\n"
-    f"{app_name} v{app_version_number}\n"
+    f"{header}\n"
+    f"{'=' * len(header)}\n"
     f"Python: {sys.version.split()[0]} ({platform.python_implementation()})\n"
     f"Executable: {sys.executable}\n"
     f"OS: {platform.system()} {platform.release()} ({platform.machine()})\n"
 )
 
 def resource_path(relative_path):
-    """Get the absolute path to resource"""
+    """Get the absolute path to resource."""
     base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
 
     return os.path.join(base_path, relative_path)
@@ -64,14 +66,13 @@ class MainWindow(QMainWindow):
 
         self.ui.btnCreateProject.clicked.connect(self.create_new_project)
         self.ui.btnOpenProject.clicked.connect(self.open_project)
-        self.ui.btnHardwareLibrary.clicked.connect(self.hardware_library)
         self.ui.btnDocs.clicked.connect(self.open_docs)
         self.ui.btnExit.clicked.connect(QApplication.quit)
 
         self.ui.recentProjectsList.itemDoubleClicked.connect(self.load_recent)
 
         # Set the window's title and icon
-        self.setWindowTitle(f"{app_name} v{app_version_number}")
+        self.setWindowTitle(f"{app_name} v{app_version}")
         self.setWindowIcon(QIcon(icon_path))
 
         self.populate_recent_projects_list()
@@ -87,7 +88,7 @@ class MainWindow(QMainWindow):
         if os.name == "nt":
             import ctypes
 
-            app_id = f"2klxst.{app_name}.{app_name}.{app_version_number}"
+            app_id = f"2klxst.{app_name}.{app_name}.{app_version}"
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
 
     def create_new_project(self):
@@ -108,7 +109,7 @@ class MainWindow(QMainWindow):
             self.ui.progressBar.setFormat("Starting 3D engine...")
 
             QApplication.instance().setStyle("Fusion")  # type: ignore
-            self.workspace = BoxCAD(project_path=None, app_version=app_version_number)
+            self.workspace = BoxCAD(project_path=None, app_version=app_version)
 
             self.ui.progressBar.setValue(100)
             self.ui.progressBar.setFormat("Done!")
@@ -156,7 +157,7 @@ class MainWindow(QMainWindow):
             self.ui.progressBar.setFormat("Starting 3D engine...")
 
             QApplication.instance().setStyle("Fusion")  # type: ignore
-            self.workspace = BoxCAD(project_path=self._pending_project_path, app_version=app_version_number)
+            self.workspace = BoxCAD(project_path=self._pending_project_path, app_version=app_version)
             self.update_recent_files(self._pending_project_path)
 
             self.ui.progressBar.setValue(100)
@@ -177,11 +178,6 @@ class MainWindow(QMainWindow):
 
         webbrowser.open("https://sites.google.com/view/boxcad-docs/home")
 
-    # TODO: Finish the hardware library functionality
-    def hardware_library(self):
-        self.print_to_console("'Hardware Library' button was clicked!", "info")
-        self.print_to_console("Switching to Workspace...", "info")
-
     def load_recent(self, item):
         self.print_to_console(f"Trying to load: {item.data(Qt.UserRole + 1)}", "info")
 
@@ -196,16 +192,26 @@ class MainWindow(QMainWindow):
 
             self.print_to_console("Switching to Workspace...", "info")
 
-            QApplication.instance().setStyle("Fusion") # type: ignore
+            self.ui.progressBar.setValue(30)
+            self.ui.progressBar.setFormat("Loading workspace...")
 
-            self.workspace = BoxCAD(project_path=path, app_version=app_version_number)
+            QApplication.instance().setStyle("Fusion")  # type: ignore
+
+            self.ui.progressBar.setValue(60)
+            self.ui.progressBar.setFormat("Starting 3D engine...")
+
+            self.workspace = BoxCAD(project_path=path, app_version=app_version)
             self.update_recent_files(path)
-            self.workspace.showMaximized()
-            self.close()
+
+            self.ui.progressBar.setValue(100)
+            self.ui.progressBar.setFormat("Done!")
+
+            QTimer.singleShot(300, lambda: (self.workspace.showMaximized(), self.close()))
         except Exception as e:
             import traceback
             traceback.print_exc()
             self.print_to_console(f"CRASH: {e}", "error")
+            self.ui.progressBar.setVisible(False)
 
     def load_recent_files(self):
         # Load the recentFiles.json file safely. If it doesn't exist, create it.
@@ -244,23 +250,25 @@ class MainWindow(QMainWindow):
     def update_recent_files(self, file_path):
         data = self.load_recent_files()
 
+        # Normalize path (important!)
+        file_path = os.path.abspath(file_path)
+
         # Remove existing entry with the same path
         data = [item for item in data if item["filePath"] != file_path]
 
         # Extract filename info
         file_name = os.path.basename(file_path)
-        file_name_no_ext = os.path.splitext(file_path)[0]
+        file_name_no_ext = os.path.splitext(file_name)[0]
 
-        # Add updated entry
-        data.append({
+        # Add updated entry at the top
+        data.insert(0, {
             "fileName": file_name,
             "fileNameNoExt": file_name_no_ext,
             "filePath": file_path,
-            "lastOpened": datetime.now(timezone.utc).isoformat() + "Z"
+            "lastOpened": datetime.now(timezone.utc).isoformat()
         })
 
-        # Sort and trim
-        data = self.sort_by_latest(data)
+        # Trim
         data = self.keep_top_five(data)
 
         # Save
@@ -333,10 +341,10 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
     QApplication.setOrganizationName("BoxCAD")
     QApplication.setApplicationName("BoxCAD")
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
 
     data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
     os.makedirs(data_dir, exist_ok=True)
