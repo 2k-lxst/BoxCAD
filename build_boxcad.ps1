@@ -4,6 +4,7 @@ $distPath = "$PSScriptRoot\dist"
 $buildTemp = "$PSScriptRoot\build_temp"
 $specPath = "$PSScriptRoot\build_config"
 $splashPath = "$PSScriptRoot\assets\splash_screen_600x400.png"
+
 $addData = @(
     "$PSScriptRoot\.venv\Lib\site-packages\casadi;casadi",
     "$PSScriptRoot\ui;ui",
@@ -32,28 +33,40 @@ $choice = Read-Host "Choose an option"
 switch ($choice) {
     "1" { $continue = $true }
     "q" { exit }
-    Default { Write-Host "Invalid choice."; exit }
+    Default {
+        Write-Host "Invalid choice." -ForegroundColor Red
+        exit
+    }
 }
 
 # Build process
 if ($continue) {
     Write-Host "`n🚀 Building BoxCAD..." -ForegroundColor Magenta
 
-    # Construct --add-data parameters
-    $addDataParams = $addData | ForEach-Object { "--add-data `"$_`"" }
+    # Build argument array properly
+    $pyInstallerArgs = @(
+        "--specpath", $specPath
+        "--workpath", $buildTemp
+        "--noconfirm"
+        "--onefile"
+        "--windowed"
+        "--name", "BoxCAD"
+        "--distpath", $distPath
+        "--splash", $splashPath
+        "--hidden-import", "main_window"
+    )
+
+    # Add all --add-data entries correctly
+    foreach ($item in $addData) {
+        $pyInstallerArgs += "--add-data"
+        $pyInstallerArgs += $item
+    }
+
+    # Entry script
+    $pyInstallerArgs += "$PSScriptRoot\main.py"
 
     # Run PyInstaller
-    & $venvPath -m PyInstaller `
-        --specpath $specPath `
-        --workpath $buildTemp `
-        --noconfirm `
-        --onefile `
-        --windowed `
-        --name "BoxCAD" `
-        --distpath $distPath `
-        --splash $splashPath `
-        $addDataParams `
-        "$PSScriptRoot\main_window.py"
+    & $venvPath -m PyInstaller @pyInstallerArgs
 }
 
 # Cleanup

@@ -408,7 +408,6 @@ class BoxCAD(QMainWindow):
 
         if not os.path.isfile(resource_path("model.stl")):
             shutil.copy(resource_path("startingModel.stl"), resource_path("model.stl"))
-            os.remove(resource_path("startingModel.stl"))
 
         # Initialize components
         self.ui_builder = BuildUI()
