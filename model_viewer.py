@@ -8,13 +8,14 @@ import os
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--log-level=3 --disable-gpu-compositing"
 os.environ["QT_LOGGING_RULES"] = "qt.webenginecontext.debug=false"
 
-import threading, socketserver, http.server
+import threading, socketserver
 from qtpy.QtWidgets import QFrame, QVBoxLayout
 from qtpy.QtWebEngineWidgets import QWebEngineView # type: ignore
-from qtpy.QtCore import QUrl, QObject, QTimer
+from qtpy.QtCore import QUrl, QObject, QTimer, QStandardPaths
 from qtpy.QtWebChannel import QWebChannel
 from PySide6.QtCore import Slot
 from http.server import SimpleHTTPRequestHandler
+from functools import partial
 
 def resource_path(relative_path):
     """Get the absolute path to resource."""
@@ -57,6 +58,28 @@ class QuietHandler(SimpleHTTPRequestHandler):
         else:
             print(message)
 
+    def do_GET(self):
+        if self.path.startswith("/model.stl"):
+            model_path = os.path.join(
+                QStandardPaths.writableLocation(QStandardPaths.AppDataLocation),
+                "model.stl"
+            )
+
+            if not os.path.exists(model_path):
+                self.send_response(404)
+                self.end_headers()
+                return
+
+            self.send_response(200)
+            self.send_header("Content-type", "application/octet-stream")
+            self.end_headers()
+
+            with open(model_path, "rb") as f:
+                self.wfile.write(f.read())
+            return
+
+        return super().do_GET()
+
 class Bridge(QObject):
     """Small helper class to recieve signals from JavaScript."""
     def __init__(self, viewer):
@@ -88,11 +111,12 @@ class ModelViewer(QFrame):
         self.browser.page().setWebChannel(self.channel)
 
         # Serve the current folder via HTTP on a free port
-        self.base_dir = get_bundle_dir()
-        os.chdir(self.base_dir) # Server serves files from this folder
+        self.base_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+
+        handler = partial(QuietHandler, directory=self.base_dir)
 
         # Create the server
-        self.httpd = socketserver.TCPServer(("", 0), QuietHandler) # 0 = Pick a free port
+        self.httpd = socketserver.TCPServer(("", 0), handler) # 0 = Pick a free port
 
         # Change the default printer to use the custom printer
         self.httpd.printer = self.print_to_console
@@ -131,7 +155,10 @@ class ModelViewer(QFrame):
         if self.pending_object is None: return
 
         try:
-            stl_path = os.path.join(self.base_dir, "model.stl")
+            app_data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+            os.makedirs(app_data_dir, exist_ok=True)
+
+            stl_path = os.path.join(app_data_dir, "model.stl")
 
             self.pending_object.export(stl_path)
 

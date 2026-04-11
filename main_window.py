@@ -46,8 +46,7 @@ class ExportFormat(Enum):
 def resource_path(relative_path):
     """Get the absolute path to resource, works for developement enviroment and PyInstaller."""
     if getattr(sys, "frozen", False):
-        # Path where the .exe lives
-        base_path = os.path.dirname(sys.executable)
+        base_path = sys._MEIPASS
     else:
         # Path where the script lives
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -319,10 +318,10 @@ class BoxCAD(QMainWindow):
     def __init__(self, project_path, app_version = "Unknown Version"):
         super().__init__()
 
-        app_data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
-        os.makedirs(app_data_dir, exist_ok=True)
+        self.app_data_dir = QStandardPaths.writableLocation(QStandardPaths.AppDataLocation)
+        os.makedirs(self.app_data_dir, exist_ok=True)
 
-        self.recent_file_path = os.path.join(app_data_dir, "recentFiles.json")
+        self.recent_file_path = os.path.join(self.app_data_dir, "recentFiles.json")
 
         self.last_result = None
         self._loading = False
@@ -406,8 +405,10 @@ class BoxCAD(QMainWindow):
             "startup"
         )
 
-        if not os.path.isfile(resource_path("model.stl")):
-            shutil.copy(resource_path("startingModel.stl"), resource_path("model.stl"))
+        model_path = os.path.join(self.app_data_dir, "model.stl")
+
+        if not os.path.isfile(model_path):
+            shutil.copy(resource_path("startingModel.stl"), model_path)
 
         # Initialize components
         self.ui_builder = BuildUI()
